@@ -6,7 +6,7 @@
 
 from collections import defaultdict
 import itertools
-import plotting
+import ReinforcementLearning.plotting
 import numpy as np
 import copy
 
