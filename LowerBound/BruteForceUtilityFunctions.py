@@ -5,7 +5,7 @@
 
 
 import numpy as np
-from BinaryConversion import dectobin
+from LowerBound.BinaryConversion import dectobin
 
 
 # In[2]:
