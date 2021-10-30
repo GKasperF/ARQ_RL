@@ -10,19 +10,27 @@ import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
 from collections import defaultdict
+import torch
+
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     Channel_Local = copy.deepcopy(Channel)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
+    TransEnv = TransEnv.to(device)
     
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
+
+    print('Done training')
     
     average_reward, average_transmissions, average_recovery = Test(TransEnv, policy, Nit)
     
+    print('Done testing')
+
     return(average_reward, average_transmissions, average_recovery)
 
 def Train(env, discount_factor, num_episodes, epsilon):
-    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n)
+    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n).to(device)
     for i in range(len(num_episodes)):
         Q, policy = QL.GradientQLearning(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
     
@@ -70,7 +78,6 @@ def Test(env, policy, Nit):
     average_recovery = np.mean(reward_save[:, 2]) - env.Tf
     
     return(average_reward, average_transmissions, average_recovery)
-
 
 #Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
 Channel = Envs.iidchannel(0.25)

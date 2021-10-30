@@ -22,10 +22,16 @@ def Train(env, discount_factor, num_episodes, epsilon):
     
     return(Qfunction, policy)
 
+num_cores = 2
 Channel = Envs.iidchannel(0.25)
 env = Envs.EnvFeedbackGeneral(4, 1.4, 5, Channel, 1)
 env = env.to(device)
-t_begin = time()
-Q, policy = Train(env, 0.95, [1000], [0.5])
-t_end = time()
+with Parallel(n_jobs = num_cores) as parallel:
+	t_begin = time()
+	parallel(delayed(Train)(env, 0.95, [1000], [epsilon]) for epsilon in [0.5, 0.5])
+	t_end = time()
+#store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+
+#Q, policy = Train(env, 0.95, [1000], [0.5])
+
 print('Training takes {} seconds'.format(t_end - t_begin))
