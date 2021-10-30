@@ -6,7 +6,6 @@
 
 from collections import defaultdict
 import itertools
-import ReinforcementLearning.plotting
 import numpy as np
 import copy
 import torch
@@ -47,10 +46,6 @@ def qLearningDebug(env, num_episodes, Q_input, discount_factor = 1.0,
        
     Q = copy.deepcopy(Q_input)
     NumberVisits = defaultdict(lambda: np.zeros(env.action_space.n))
-   
-    stats = plotting.EpisodeStats(
-        episode_lengths = np.zeros(num_episodes),
-        episode_rewards = np.zeros(num_episodes))
     
 
 
@@ -76,10 +71,6 @@ def qLearningDebug(env, num_episodes, Q_input, discount_factor = 1.0,
             # take action and get reward, transit to next state
             next_state, reward, done, SuccessF = env.step(env.actions[action_index])
    
-            # Update statistics
-            stats.episode_rewards[ith_episode] += reward
-            stats.episode_lengths[ith_episode] = t
-               
             # TD Update
             next_state_index = next_state.tobytes()
             state_index = state.tobytes()
@@ -100,7 +91,7 @@ def qLearningDebug(env, num_episodes, Q_input, discount_factor = 1.0,
 
     policy = createEpsilonGreedyPolicy(Q, 0, env.action_space.n)
        
-    return Q, stats, policy, NumberVisits, DebugStr
+    return Q, policy, NumberVisits, DebugStr
 
 def qLearning(env, num_episodes, Q_input, discount_factor = 1.0,
                             alpha = 0.6, epsilon = 0.1):

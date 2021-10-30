@@ -10,25 +10,42 @@ import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
 from collections import defaultdict
+import torch
+
+#device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+q = []
+if torch.cuda.is_available():
+  num_cores = torch.cuda.device_count()
+  for i in range(num_cores):
+    q.append('cuda:'+'{}'.format(i))
+else:
+  num_cores = multiprocessing.cpu_count()
+  for i in range(num_cores):
+    q.append('cpu')
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
+    device = q.pop()
     Channel_Local = copy.deepcopy(Channel)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
+    TransEnv = TransEnv.to(device)
     
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
-    
-    average_reward, average_transmissions, average_recovery = Test(TransEnv, policy, Nit)
-    
+
+    average_reward, average_transmissions, average_recovery = Test(TransEnv, Q, Nit)
+
+    q.append(device)
+
     return(average_reward, average_transmissions, average_recovery)
 
 def Train(env, discount_factor, num_episodes, epsilon):
-    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n)
+    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n).to(env.device)
     for i in range(len(num_episodes)):
         Q, policy = QL.GradientQLearning(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
     
     return(Qfunction, policy)
 
-def Test(env, policy, Nit):
+def Test(env, Q, Nit):
     reward_save = np.zeros((Nit, 4))
     for i in range(Nit):
         done = 0
@@ -38,10 +55,7 @@ def Test(env, policy, Nit):
         time_instant = 0
         number_successes = 0
         while 1:
-          action_probabilities = policy(state)
-          action_index = np.random.choice(np.arange(
-                    len(action_probabilities)),
-                      p = action_probabilities)
+          action_index = torch.argmax(Q(state), dim = 1)
 
           # take action and get reward, transit to next state
           if action_index == 0:
@@ -71,16 +85,11 @@ def Test(env, policy, Nit):
     
     return(average_reward, average_transmissions, average_recovery)
 
-
-#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
-Channel = Envs.iidchannel(0.25)
-#num_cores = multiprocessing.cpu_count()
-num_cores = 1
-#alpha_range = np.arange(1.4, 1.71, 0.1)
-alpha_range = [1.4]
+Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
+alpha_range = np.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
-Nit = 100000
+Nit = 10000
 discount_factor = 0.95
 #num_episodes = [20000, 20000, 100000, 200000, 500000]
 #epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]

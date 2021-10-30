@@ -12,7 +12,6 @@ import gym
 from gym import error, spaces, utils
 import copy
 from gym.utils import seeding
-import matplotlib.pyplot as plt
     
 class GilbertElliott():
     def __init__(self, p, r, k, epsilon):
@@ -69,6 +68,7 @@ class EnvFeedbackGeneral(gym.Env):
         self.actions = ['send', 'silence'];
         self.action_space = spaces.Discrete(2)
         self.batch = batch
+        self.device = 'cpu'
         
         #observation space
         self.observation_space = spaces.MultiBinary(Tf)
@@ -121,6 +121,7 @@ class EnvFeedbackGeneral(gym.Env):
     def to(self, device):
         self.start_state = self.start_state.to(device)
         self.agent_state = self.agent_state.to(device)
+        self.device = device
         return(self)
 
 class iidchannel():
