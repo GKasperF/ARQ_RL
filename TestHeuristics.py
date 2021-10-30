@@ -1,5 +1,4 @@
 import numpy as np
-import time
 import gym
 from gym import error, spaces, utils
 import copy
