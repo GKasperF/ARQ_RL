@@ -9,6 +9,8 @@ import itertools
 import ReinforcementLearning.plotting
 import numpy as np
 import copy
+import torch
+import torch.nn.functional as F
 
 def createEpsilonGreedyPolicy(Q, epsilon, num_actions):
     """
@@ -146,4 +148,107 @@ def qLearning(env, num_episodes, Q_input, discount_factor = 1.0,
     policy = createEpsilonGreedyPolicy(Q, 0, env.action_space.n)
        
     return Q, policy
+
+def createEpsilonGreedyPolicyGradient(Q, epsilon, num_actions):
+    """
+    Creates an epsilon-greedy policy based
+    on a given Q-function and epsilon.
+      
+    Returns a function that takes the state
+    as an input and returns the probabilities
+    for each action in the form of a numpy array 
+    of length of the action space(set of possible actions).
+    """
+    def policyFunction(state):
+  
+        Action_probabilities = np.ones(num_actions,
+                dtype = float) * epsilon / num_actions
+                  
+        best_action = torch.argmax(Q(state), dim = 1)
+        Action_probabilities[best_action] += (1.0 - epsilon)
+        return Action_probabilities
+  
+    return policyFunction
+
+class QApproxFunction(torch.nn.Module):
+  def __init__(self, state_dim: 'Number of state variables', action_dim: 'Number of possible actions'):
+    super(QApproxFunction, self).__init__()
+
+    self.state_dim = state_dim
+    self.action_dim = action_dim
+    
+    self.Layer1 = torch.nn.Linear(state_dim, 1000)
+    self.Layer2 = torch.nn.Linear(1000, 500)
+    self.Layer3 = torch.nn.Linear(500, 250)
+    self.Layer4 = torch.nn.Linear(250, 100)
+    self.Layer5 = torch.nn.Linear(100, 50)
+    
+    self.FinalLayer = torch.nn.Linear(50, action_dim)
+
+  def forward(self, x):
+    L1 = self.Layer1(x)
+    ReLU1 = F.relu(L1)
+    L2 = self.Layer2(ReLU1)
+    ReLU2 = F.relu(L2)
+    L3 = self.Layer3(ReLU2)
+    ReLU3 = F.relu(L3)
+    L4 = self.Layer4(ReLU3)
+    ReLU4 = F.relu(L4)
+    L5 = self.Layer5(ReLU4)
+    ReLU5 = F.relu(L5)
+    
+    output = self.FinalLayer(ReLU5)
+    
+    return output
+
+def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
+                            epsilon = 0.1):
+    """
+    Q-Learning algorithm: Off-policy TD control.
+    Finds the optimal greedy policy while improving
+    following an epsilon-greedy policy"""
+       
+    #Qfunction = QApproxFunction(env.observation_space.n, env.action_space.n)
+    
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(list(Qfunction.parameters()))
+       
+    # For every episode
+    for ith_episode in range(num_episodes):
+        # Reset the environment and pick the first action
+        state = env.reset()
+        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n)   
+        for t in itertools.count():
+            # get probabilities of all actions from current state
+            action_probabilities = policy(state)
+   
+            # choose action according to 
+            # the probability distribution
+            action_index = np.random.choice(np.arange(
+                      len(action_probabilities)),
+                       p = action_probabilities)
+            state = copy.copy(state)
+            # take action and get reward, transit to next state
+            next_state, reward, done, SuccessF = env.step(env.actions[action_index])
+            if SuccessF:
+                #best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
+                #td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
+                td_target = torch.tensor([reward])
+            else:
+                best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
+                td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
+                
+            loss = criterion(Qfunction(state)[:, action_index], td_target)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+                   
+            state = next_state
+            if done:
+                break
+
+    policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
+       
+    return Qfunction, policy
 

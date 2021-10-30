@@ -467,4 +467,10 @@ class EnvFeedbackGeneral(gym.Env):
         self.agent_state = 2*np.ones((self.Tf))
         self.agent_state = self.agent_state.astype(int)
         return(self.agent_state)
-
+class iidchannel():
+    def __init__(self, epsilon):
+        self.epsilon = epsilon
+    
+    def step(self):
+        output = np.random.binomial(1, 1- self.epsilon)
+        return output
