@@ -118,6 +118,10 @@ class EnvFeedbackGeneral(gym.Env):
     def finish(self):
         self.agent_state = 2*torch.ones((self.batch, self.Tf))
         return(self.agent_state)
+    def to(self, device):
+        self.start_state = self.start_state.to(device)
+        self.agent_state = self.agent_state.to(device)
+        return(self)
 
 class iidchannel():
     def __init__(self, epsilon):

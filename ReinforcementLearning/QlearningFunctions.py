@@ -209,10 +209,11 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
     following an epsilon-greedy policy"""
        
     #Qfunction = QApproxFunction(env.observation_space.n, env.action_space.n)
-    
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = 'cpu'
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(list(Qfunction.parameters()))
-       
+      
     # For every episode
     for ith_episode in range(num_episodes):
         # Reset the environment and pick the first action
@@ -233,7 +234,7 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
             if SuccessF:
                 #best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
                 #td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
-                td_target = torch.tensor([reward])
+                td_target = torch.tensor([reward]).to(device)
             else:
                 best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
                 td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
