@@ -27,13 +27,13 @@ else:
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel)
+    alpha_reward = alpha_reward.to(device)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
     TransEnv = TransEnv.to(device)
     
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
 
     average_reward, average_transmissions, average_recovery = Test(TransEnv, Q, Nit)
-
     q.append(device)
 
     return(average_reward, average_transmissions, average_recovery)
@@ -86,7 +86,7 @@ def Test(env, Q, Nit):
     return(average_reward, average_transmissions, average_recovery)
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
-alpha_range = np.arange(0.1, 5.5, 0.1)
+alpha_range = torch.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
 Nit = 10000
