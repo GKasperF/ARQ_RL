@@ -27,7 +27,7 @@ else:
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     random.seed(alpha_reward)
-    wait_time = randint(1, 120)
+    wait_time = random.randint(1, 120)
     time.sleep(wait_time)
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel)
