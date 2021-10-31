@@ -11,6 +11,7 @@ import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
 from collections import defaultdict
 import torch
+import random
 
 #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -25,6 +26,9 @@ else:
     q.append('cpu')
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
+    random.seed(alpha_reward)
+    wait_time = randint(1, 120)
+    time.sleep(wait_time)
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel)
     alpha_reward = alpha_reward.to(device)
@@ -99,7 +103,7 @@ epsilon = [0.5]
 
 batches = 1
 
-store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 
 with open('Data/AgentNNRLresults.pickle', 'wb') as f:
     pickle.dump(store_results, f)
