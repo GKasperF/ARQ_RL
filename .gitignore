@@ -2,3 +2,6 @@
 TrainingDebug.py
 *.pyc
 TestArchive.py
+SeeDebug.py
+SeePolicy.py
+TestDebug.py
