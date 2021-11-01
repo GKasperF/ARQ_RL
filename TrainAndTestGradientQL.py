@@ -13,8 +13,6 @@ from collections import defaultdict
 import torch
 import random
 
-#device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
 q = []
 if torch.cuda.is_available():
   num_cores = torch.cuda.device_count()
