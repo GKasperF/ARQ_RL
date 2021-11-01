@@ -26,9 +26,6 @@ else:
     q.append('cpu')
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
-    random.seed(alpha_reward)
-    wait_time = random.randint(1, 120)
-    time.sleep(wait_time)
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel)
     alpha_reward = alpha_reward.to(device)
@@ -37,10 +34,10 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
 
-    average_reward, average_transmissions, average_recovery = Test(TransEnv, Q, Nit)
+    result = Test(TransEnv, Q, Nit)
     q.append(device)
 
-    return(average_reward, average_transmissions, average_recovery)
+    return(result)
 
 def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n).to(env.device)
@@ -72,12 +69,13 @@ def Test(env, Q, Nit):
           reward_acc += reward
           time_instant += 1
           state = next_state
+          if time_instant > env.Tf and transmissions == 0:
+            print('Learned bad policy')
+            break
           if done:
             if SuccessF:
               number_successes += 1
             break
-            
-            
         reward_save[i][0] = reward_acc
         reward_save[i][1] = transmissions
         reward_save[i][2] = time_instant
