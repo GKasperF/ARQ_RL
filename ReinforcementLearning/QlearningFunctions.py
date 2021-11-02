@@ -231,12 +231,14 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
                 td_target = torch.tensor([reward]).to(device) + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
                 
             loss = criterion(Qfunction(state)[:, action_index], td_target.detach())
-            
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
                    
             state = next_state
+
+
             if done:
                 break
 
@@ -291,7 +293,9 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
             loss.backward()
             optimizer.step()
 
-            Debug.append(loss.to('cpu').detach().numpy())
+            diff_test = Qfunction(state)[:, action_index] - td_target.detach()
+
+            Debug.append(diff_test.to('cpu').detach().numpy())
                    
             state = next_state
             if done:
