@@ -91,9 +91,6 @@ beta_reward = 5
 Tf = 10
 Nit = 10000
 discount_factor = 0.95
-#num_episodes = [20000, 20000, 100000, 200000, 500000]
-#epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
-
 num_episodes = [1000]
 epsilon = [0.5]
 

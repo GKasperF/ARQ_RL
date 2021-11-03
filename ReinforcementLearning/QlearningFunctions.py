@@ -197,11 +197,7 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
     Q-Learning algorithm: Off-policy TD control.
     Finds the optimal greedy policy while improving
     following an epsilon-greedy policy"""
-       
-    #Qfunction = QApproxFunction(env.observation_space.n, env.action_space.n)
-    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     device = env.device
-    #device = 'cpu'
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(list(Qfunction.parameters()))
       
@@ -223,8 +219,6 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
             # take action and get reward, transit to next state
             next_state, reward, done, SuccessF = env.step(env.actions[action_index])
             if done:
-                #best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
-                #td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
                 td_target = torch.tensor([reward]).to(device)
             else:
                 best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
@@ -294,12 +288,115 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
             optimizer.step()
 
             diff_test = Qfunction(state)[:, action_index] - td_target.detach()
-
             Debug.append(diff_test.to('cpu').detach().numpy())
                    
             state = next_state
             if done:
                 break
+
+    policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
+       
+    return Qfunction, policy, Debug
+
+def GradientQLearningMC(env, num_episodes, Qfunction, epsilon = 0.1):
+    """
+    Q-Learning algorithm: Off-policy TD control.
+    Finds the optimal greedy policy while improving
+    following an epsilon-greedy policy"""
+       
+    #Qfunction = QApproxFunction(env.observation_space.n, env.action_space.n)
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = env.device
+    #device = 'cpu'
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(list(Qfunction.parameters()))
+    # For every episode
+    for ith_episode in range(num_episodes):
+        # Reset the environment
+        state = env.reset()
+        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n) 
+        states = []
+        actions = []
+        rewards = torch.tensor([]).to(device)
+        for t in itertools.count():
+            # get probabilities of all actions from current state
+            action_probabilities = policy(state)
+            # choose action according to 
+            # the probability distribution
+            action_index = np.random.choice(np.arange(
+                      len(action_probabilities)),
+                       p = action_probabilities)
+            states.append(copy.deepcopy(state))
+            actions.append(action_index)
+            # take action and get reward, transit to next state
+            state, reward, done, SuccessF = env.step(env.actions[action_index])
+            rewards = torch.cat((rewards, reward))
+            if done:
+                break
+
+        for t in range(len(rewards)):
+            target = torch.sum(rewards[t:], dim = 0, keepdim = True).detach()
+            prediction = Qfunction(states[t])[:,actions[t]]
+            loss = criterion(prediction, target)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+    policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
+       
+    return Qfunction, policy
+
+def GradientQLearningDebugMC(env, num_episodes, Qfunction, epsilon = 0.1):
+    """
+    Q-Learning algorithm: Off-policy TD control.
+    Finds the optimal greedy policy while improving
+    following an epsilon-greedy policy"""
+       
+    #Qfunction = QApproxFunction(env.observation_space.n, env.action_space.n)
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = env.device
+    #device = 'cpu'
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(list(Qfunction.parameters()))
+    
+    Debug = []
+    # For every episode
+    for ith_episode in range(num_episodes):
+        # Reset the environment and pick the first action
+        state = env.reset()
+        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n) 
+        #Predictions = torch.tensor([]).to(device)
+        states = []
+        actions = []
+        rewards = torch.tensor([]).to(device)
+        for t in itertools.count():
+            # get probabilities of all actions from current state
+            
+            action_probabilities = policy(state)
+   
+            # choose action according to 
+            # the probability distribution
+            action_index = np.random.choice(np.arange(
+                      len(action_probabilities)),
+                       p = action_probabilities)
+            #Predictions = torch.cat((Predictions, Qfunction(state)[:,action_index]))
+            states.append(copy.deepcopy(state))
+            actions.append(action_index)
+            #Predictions.backward()
+            # take action and get reward, transit to next state
+            state, reward, done, SuccessF = env.step(env.actions[action_index])
+            rewards = torch.cat((rewards, reward))
+            if done:
+                break
+
+        for t in range(len(rewards)):
+            target = torch.sum(rewards[t:], dim = 0, keepdim = True).detach()
+            prediction = Qfunction(states[t])[:,actions[t]]
+            loss = criterion(prediction, target)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            Debug.append(loss.to('cpu').detach().numpy())
 
     policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
        

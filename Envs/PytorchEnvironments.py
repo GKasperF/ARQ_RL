@@ -56,9 +56,9 @@ class Fritchman():
 
 class EnvFeedbackGeneral(gym.Env):
     def __init__(self, Tf, alpha, beta, channel, batch):
-        self.Tf = Tf
-        self.alpha = alpha
-        self.beta = beta
+        self.Tf = torch.tensor([Tf])
+        self.alpha = torch.tensor([alpha])
+        self.beta = torch.tensor([beta])
         self.channel = channel
         #action space
         self.actions = ['send', 'silence'];
@@ -117,6 +117,9 @@ class EnvFeedbackGeneral(gym.Env):
     def to(self, device):
         self.start_state = self.start_state.to(device)
         self.agent_state = self.agent_state.to(device)
+        self.Tf = self.Tf.to(device)
+        self.alpha = self.alpha.to(device)
+        self.beta = self.beta.to(device)
         self.device = device
         return(self)
 
