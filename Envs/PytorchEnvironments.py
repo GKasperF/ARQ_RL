@@ -71,6 +71,7 @@ class EnvFeedbackGeneral(gym.Env):
 
         self.start_state = torch.zeros((batch, Tf))
         self.agent_state = copy.deepcopy(self.start_state)
+        self.finish_state = 2*torch.ones((batch, Tf))
     
         #Probability array
         self.array = {}
@@ -112,7 +113,7 @@ class EnvFeedbackGeneral(gym.Env):
         self.agent_state = copy.deepcopy(self.start_state)
         return(self.agent_state)
     def finish(self):
-        self.agent_state = 2*torch.ones((self.batch, self.Tf))
+        self.agent_state = copy.deepcopy(self.finish_state)
         return(self.agent_state)
     def to(self, device):
         self.start_state = self.start_state.to(device)
