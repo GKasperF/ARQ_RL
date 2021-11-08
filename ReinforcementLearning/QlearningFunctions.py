@@ -161,23 +161,32 @@ def createEpsilonGreedyPolicyGradient(Q, epsilon, num_actions):
     return policyFunction
 
 class QApproxFunction(torch.nn.Module):
-  def __init__(self, state_dim: 'Number of state variables', action_dim: 'Number of possible actions'):
+  def __init__(self, state_dim: 'Number of state variables', action_dim: 'Number of possible actions', hidden_layer: 'Size of the hidden layers'):
     super(QApproxFunction, self).__init__()
 
     self.state_dim = state_dim
     self.action_dim = action_dim
+    self.hidden_layer = hidden_layer
     
-    self.Layer1 = torch.nn.Linear(state_dim, 1000)
-    self.Layer2 = torch.nn.Linear(1000, 500)
-    self.Layer3 = torch.nn.Linear(500, 250)
-    self.Layer4 = torch.nn.Linear(250, 100)
-    self.Layer5 = torch.nn.Linear(100, 50)
+    self.Layer1 = torch.nn.Linear(state_dim, 1000*state_dim)
+    # self.Layer2 = torch.nn.Linear(1000, 500)
+    # self.Layer3 = torch.nn.Linear(500, 250)
+    # self.Layer4 = torch.nn.Linear(250, 100)
+    # self.Layer5 = torch.nn.Linear(100, 50)
+
+    self.Layer2 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer3 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer4 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer5 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+
+    self.Layer6 = torch.nn.Conv1d(hidden_layer, 1, 1)
     
-    self.FinalLayer = torch.nn.Linear(50, action_dim)
+    self.FinalLayer = torch.nn.Linear(state_dim, action_dim)
 
   def forward(self, x):
     L1 = self.Layer1(x)
-    ReLU1 = F.relu(L1)
+    L1_reshaped = L1.view(-1, self.hidden_layer, self.state_dim)
+    ReLU1 = F.relu(L1_reshaped)
     L2 = self.Layer2(ReLU1)
     ReLU2 = F.relu(L2)
     L3 = self.Layer3(ReLU2)
@@ -186,8 +195,10 @@ class QApproxFunction(torch.nn.Module):
     ReLU4 = F.relu(L4)
     L5 = self.Layer5(ReLU4)
     ReLU5 = F.relu(L5)
+    L6 = self.Layer6(ReLU5)
+
     
-    output = self.FinalLayer(ReLU5)
+    output = self.FinalLayer(L6.view(-1, self.state_dim))
     
     return output
 
@@ -241,7 +252,7 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
     return Qfunction, policy
 
 def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
-                            epsilon = 0.1):
+                            epsilon = 0.1, UpdateEpisodes = 10):
     """
     Q-Learning algorithm: Off-policy TD control.
     Finds the optimal greedy policy while improving
@@ -251,7 +262,7 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     device = env.device
     #device = 'cpu'
-    criterion = torch.nn.MSELoss()
+    criterion = torch.nn.MSELoss(reduction='mean')
     optimizer = torch.optim.Adam(list(Qfunction.parameters()))
     
     Debug = []
@@ -260,7 +271,14 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     for ith_episode in range(num_episodes):
         # Reset the environment and pick the first action
         state = env.reset()
-        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n)   
+        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n)
+        states = torch.tensor([]).to(device)
+        actions = []
+        rewards = torch.tensor([]).to(device)
+
+        if ith_episode % UpdateEpisodes == 0:
+            Qtarget = copy.deepcopy(Qfunction)
+
         for t in itertools.count():
             # get probabilities of all actions from current state
             action_probabilities = policy(state)
@@ -270,29 +288,29 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
             action_index = np.random.choice(np.arange(
                       len(action_probabilities)),
                        p = action_probabilities)
-            state = copy.deepcopy(state)
-            # take action and get reward, transit to next state
-            next_state, reward, done, SuccessF = env.step(env.actions[action_index])
-            if done:
-                #best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
-                #td_target = reward + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
-                td_target = torch.tensor([reward]).to(device)
-            else:
-                best_next_action = torch.argmax(Qfunction(next_state), dim = 1) 
-                td_target = torch.tensor([reward]).to(device) + 0.95 * Qfunction(next_state)[:, best_next_action[0]]
-                
-            loss = criterion(Qfunction(state)[:, action_index], td_target.detach())
-            
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
 
-            diff_test = Qfunction(state)[:, action_index] - td_target.detach()
-            Debug.append(diff_test.to('cpu').detach().numpy())
-                   
-            state = next_state
+            #states.append(copy.deepcopy(state))
+            states = torch.cat((states, copy.deepcopy(state)), dim = 0)
+            actions.append(action_index)
+
+            # take action and get reward, transit to next state
+            state, reward, done, SuccessF = env.step(env.actions[action_index])
+            rewards = torch.cat((rewards, reward))
+            
             if done:
                 break
+
+
+        TargetValues = torch.cat((Qtarget(states[1:]), torch.tensor([[0., 0.]]).to(device)), dim = 0)
+        BestTargetValues, _ = torch.max(TargetValues, dim = 1, keepdim = True)
+        td_target = rewards.reshape((len(rewards), 1)) + 0.95*BestTargetValues
+        td_estimate = Qfunction(states)[torch.arange(len(states)), actions].reshape( (len(states), 1))
+
+        loss = criterion(td_estimate, td_target.detach())
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
        
