@@ -6,3 +6,6 @@ SeeDebug.py
 SeePolicy.py
 TestDebug.py
 TrainingDebugTimes.txt
+PrintOptimalPolicies.py
+OptimalPolicies.txt
+
