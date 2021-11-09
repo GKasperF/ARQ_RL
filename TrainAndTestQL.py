@@ -74,12 +74,12 @@ def Test(env, policy, Nit):
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
 num_cores = multiprocessing.cpu_count()
-alpha_range = np.arange(1.4, 1.71, 0.1)
+alpha_range = np.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
-Nit = 100000
+Nit = 10000
 discount_factor = 0.95
-num_episodes = [20000, 20000, 100000, 200000, 500000]
+num_episodes = [2000, 2000, 10000, 20000, 50000]
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 alpha = [0.5, 0.2, 0.01, 0.001, 0.0001]
 store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel) for alpha_reward in alpha_range)
