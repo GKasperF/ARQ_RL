@@ -18,6 +18,7 @@ if torch.cuda.is_available():
   num_cores = torch.cuda.device_count()
   for i in range(num_cores):
     q.append('cuda:'+'{}'.format(i))
+    q.append('cuda:'+'{}'.format(i))
 else:
   num_cores = multiprocessing.cpu_count()
   for i in range(num_cores):
@@ -34,6 +35,9 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
 
     result = Test(TransEnv, Q, Nit)
     q.append(device)
+
+    with open('Data/AgentCNNRLresults.pickle', 'ab') as f:
+      pickle.dump(result, f)
 
     return(result)
 
@@ -90,14 +94,14 @@ alpha_range = torch.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
 Nit = 10000
+num_episodes = [2000, 2000, 10000, 20000, 50000]
+epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
-num_episodes = [1000]
-epsilon = [0.5]
 
 batches = 1
 
-store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+store_results = Parallel(n_jobs = 2*num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 
-with open('Data/AgentNNRLresults.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresults.pickle', 'wb') as f:
     pickle.dump(store_results, f)
 
