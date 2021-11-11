@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --job-name RL_TrainAndTest
 #SBATCH --mail-type=FAIL,BEGIN,END
-#SBATCH --time=06:00:00
+#SBATCH --time=23:00:00
 #SBATCH --gpus-per-node=4
 #SBATCH --partition=compute_full_node
 
