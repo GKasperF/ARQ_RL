@@ -13,7 +13,6 @@ if torch.cuda.is_available():
   num_cores = torch.cuda.device_count()
   for i in range(num_cores):
     q.append('cuda:'+'{}'.format(i))
-    q.append('cuda:'+'{}'.format(i))
 else:
   num_cores = multiprocessing.cpu_count()
   for i in range(num_cores):
@@ -31,7 +30,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     result = Test(TransEnv, Q, Nit)
     q.append(device)
 
-    with open('Data/AgentCNNRLresults.pickle', 'ab') as f:
+    with open('Data/AgentCNNRLresultsTestBatch.pickle', 'ab') as f:
       pickle.dump(result, f)
 
     return(result)
@@ -39,7 +38,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
 def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
     for i in range(len(num_episodes)):
-        Qfunction, policy = QL.GradientQLearning(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
+        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
     
     return(Qfunction, policy)
 
@@ -89,14 +88,15 @@ alpha_range = torch.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
 Nit = 10000
-num_episodes = [2000, 2000, 10000, 20000, 50000]
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 
-batches = 1
+batches = 10
 
-store_results = Parallel(n_jobs = 2*num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+num_episodes = [int(2000/batches), int(2000/batches), int(10000/batches), int(20000/batches), int(50000/batches)]
 
-with open('Data/AgentCNNRLresults.pickle', 'wb') as f:
+store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+
+with open('Data/AgentCNNRLresultsTestBatch.pickle', 'wb') as f:
     pickle.dump(store_results, f)
 

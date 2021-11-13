@@ -7,7 +7,7 @@ import copy
 import torch
 import torch.nn.functional as F
 
-def createEpsilonGreedyPolicyGradient(Q, epsilon, num_actions):
+def createEpsilonGreedyPolicyGradient(Q, epsilon, num_actions, batch = 1):
     """
     Creates an epsilon-greedy policy based
     on a given Q-function and epsilon.
@@ -18,12 +18,9 @@ def createEpsilonGreedyPolicyGradient(Q, epsilon, num_actions):
     of length of the action space(set of possible actions).
     """
     def policyFunction(state):
-  
-        Action_probabilities = np.ones(num_actions,
-                dtype = float) * epsilon / num_actions
-                  
-        best_action = torch.argmax(Q(state), dim = 1)
-        Action_probabilities[best_action] += (1.0 - epsilon)
+        Action_probabilities = epsilon/num_actions * np.ones((batch, num_actions), dtype = float)
+        best_action = torch.argmax(Q(state), dim = 1).detach().to('cpu')
+        Action_probabilities[range(batch), best_action] += (1.0 - epsilon)
         return Action_probabilities
   
     return policyFunction
@@ -140,8 +137,9 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     for ith_episode in range(num_episodes):
         # Reset the environment and pick the first action
         state = env.reset()
-        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n)
+        policy = createEpsilonGreedyPolicyGradient(Qfunction, epsilon, env.action_space.n, env.batch)
         states = torch.tensor([]).to(device)
+        next_states = torch.tensor([]).to(device)
         actions = []
         rewards = torch.tensor([]).to(device)
 
@@ -150,30 +148,40 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
 
         for t in itertools.count():
             # get probabilities of all actions from current state
-            action_probabilities = policy(state)
-   
-            # choose action according to 
-            # the probability distribution
-            action_index = np.random.choice(np.arange(
-                      len(action_probabilities)),
-                       p = action_probabilities)
+            action_probabilities = policy(state)   
+            action_index = []
+            for i in range(env.batch):
+                action_temp = np.random.choice( np.arange( len(action_probabilities[i])), p = action_probabilities[i])
+                action_index.append(env.actions[action_temp])
+                actions.append(action_temp)
 
             #states.append(copy.deepcopy(state))
             states = torch.cat((states, copy.deepcopy(state)), dim = 0)
-            actions.append(action_index)
 
             # take action and get reward, transit to next state
-            state, reward, done, SuccessF = env.step(env.actions[action_index])
+            state, reward, done, SuccessF = env.step(action_index)
+            next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
             rewards = torch.cat((rewards, reward))
             
             if done:
                 break
 
+        
+        Next_States_QValues = Qtarget(next_states)
+        finish_state = env.finish_state[0]
+        finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
+        finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
+        Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device) , Next_States_QValues)
 
-        TargetValues = torch.cat((Qtarget(states[1:]), torch.tensor([[0., 0.]]).to(device)), dim = 0)
-        BestTargetValues, _ = torch.max(TargetValues, dim = 1, keepdim = True)
+        BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
         td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
-        td_estimate = Qfunction(states)[torch.arange(len(states)), actions].reshape( (len(states), 1))
+
+        Qestimates = Qfunction(states)
+        unfinished_states_indices = torch.logical_not(torch.all(torch.eq(states, finish_state), dim = 1))
+
+        td_target = td_target[unfinished_states_indices]
+        td_estimate = Qestimates[torch.arange(len(states)), actions].reshape( (len(states), 1))
+        td_estimate = td_estimate[unfinished_states_indices]
 
         loss = criterion(td_estimate, td_target.detach())
         

@@ -1,14 +1,9 @@
-import numpy as np
 from time import time
-from joblib import Parallel, delayed
-import multiprocessing
 import pickle
 import dill
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as EnvsNN
 import torch
-import Envs.Environments as Envs
-from collections import defaultdict
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -20,9 +15,9 @@ def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     
     return(Qfunction, policy, Debug)
 
-num_cores = 2
+batches = 4
 Channel = EnvsNN.GilbertElliott(0.25, 0.25, 0, 1)
-TransEnv = EnvsNN.EnvFeedbackGeneral(10, 1.4, 5, Channel, 1)
+TransEnv = EnvsNN.EnvFeedbackGeneral(10, 1.4, 5, Channel, batches)
 TransEnv = TransEnv.to(device)
 
 num_episodes = [2000, 2000, 10000, 20000, 50000]
