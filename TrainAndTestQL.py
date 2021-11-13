@@ -1,13 +1,10 @@
 import numpy as np
 import time
-import gym
-from gym import error, spaces, utils
 import copy
-from gym.utils import seeding
 from joblib import Parallel, delayed
 import multiprocessing
 import pickle
-import ReinforcementLearning.QlearningFunctions as QL
+import ReinforcementLearning.QlearningTable as QL
 import Envs.Environments as Envs
 from collections import defaultdict
 

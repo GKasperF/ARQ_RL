@@ -1,17 +1,12 @@
 import numpy as np
 import time
-import gym
-from gym import error, spaces, utils
 import copy
-from gym.utils import seeding
 from joblib import Parallel, delayed
 import multiprocessing
 import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
-from collections import defaultdict
 import torch
-import random
 
 q = []
 if torch.cuda.is_available():
@@ -44,7 +39,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
 def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
     for i in range(len(num_episodes)):
-        Q, policy, Debug = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
+        Qfunction, policy = QL.GradientQLearning(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
     
     return(Qfunction, policy)
 

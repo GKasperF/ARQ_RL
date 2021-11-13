@@ -1,7 +1,4 @@
 import numpy as np
-import gym
-from gym import error, spaces, utils
-import copy
 from gym.utils import seeding
 from joblib import Parallel, delayed
 import multiprocessing

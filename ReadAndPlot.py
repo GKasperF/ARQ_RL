@@ -1,11 +1,18 @@
 import pickle
 import numpy as np
 from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
-with open('Data/AgentNNRLresults_FirstAlphaRange00.pickle', 'rb') as f:
-    store_results = pickle.load(f)
+
+store_results = []
+
+with open('Data/AgentCNNRLresults.pickle', 'rb') as f:
+    while 1:
+        try:
+            store_results = pickle.load(f)
+        except (EOFError, pickle.UnpicklingError):
+            break
 
 average_transmissions = [store_results[t][1] for t in range(len(store_results))]
-average_recovery = [store_results[t][2] for t in range(len(store_results))]
+average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
 
 test = zip(average_transmissions, average_recovery)
 test = list(test)
@@ -93,4 +100,5 @@ average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_
 
 import matplotlib.pyplot as plt
 plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
+#plt.plot(average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
 plt.show()
