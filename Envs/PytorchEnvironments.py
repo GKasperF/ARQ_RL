@@ -105,7 +105,7 @@ class EnvFeedbackGeneral(gym.Env):
         self.agent_state[success == 1] = copy.deepcopy(self.finish_state[success == 1])
         self.agent_state = torch.roll(self.agent_state, 1, 1)
         self.agent_state[ success == 0, 0] = 0
-        done = torch.all(success)
+        done = torch.all(success.type(torch.uint8))
         return(self.agent_state, reward, done, success)
     def reset(self):
         self.agent_state = copy.deepcopy(self.start_state)
