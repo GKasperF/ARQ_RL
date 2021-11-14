@@ -13,3 +13,4 @@ DebugScript.py
 ReadAndResave.py
 TestEnvironment.py
 *.prof
+*.pickle
