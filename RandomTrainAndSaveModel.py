@@ -15,7 +15,7 @@ def TrainDebugNN(env, discount_factor, num_episodes):
     return(Qfunction, policy)
 
 batches = 8
-Channel = EnvsNN.GilbertElliott(0.25, 0.25, 0, 1)
+Channel = EnvsNN.GilbertElliott(0.25, 0.25, 0, 1, batches).to(device)
 TransEnv = EnvsNN.EnvFeedbackGeneral(10, 1.4, 5, Channel, batches)
 TransEnv = TransEnv.to(device)
 

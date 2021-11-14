@@ -10,27 +10,39 @@ import copy
 from gym.utils import seeding
     
 class GilbertElliott():
-    def __init__(self, p, r, k, epsilon):
-      self.p = p
-      self.r = r
-      self.epsilon = epsilon
-      self.k = k
-      self.state = np.random.binomial(1, self.p)
-
+    def __init__(self, p, r, k, epsilon, batch = 1):
+      self.p = p * torch.ones(batch)
+      self.r = r * torch.ones(batch)
+      self.epsilon = epsilon * torch.ones(batch)
+      self.k = k * torch.ones(batch)
+      self.state = torch.bernoulli(p * torch.ones(batch))
+      self.batch = batch
+      self.device = 'cpu'
+      self.output = torch.zeros(batch)
     def step(self):
-      if self.state == 0:
-        self.state = np.random.binomial(1, self.p)
-        output = np.random.binomial(1, 1-self.k)
-      else:
-        self.state = np.random.binomial(1, 1-self.r)
-        output = np.random.binomial(1, 1-self.epsilon)
+      indices0 = self.state == 0
+      indices1 = self.state != 0
+      self.output[indices0] = torch.bernoulli(1 - self.k[indices0])
+      self.output[indices1] = torch.bernoulli(1 - self.epsilon[indices1])
       
-      return(output)
+      self.state[indices0] = torch.bernoulli(self.p[indices0])
+      self.state[indices1] = torch.bernoulli(1 - self.r[indices1])
+
+      return self.output.type(torch.int64)
     def reset(self):
-      self.state = np.random.binomial(1, self.p)
+      self.state = torch.bernoulli(self.p * torch.ones(self.batch))
       return(self.state)
     def __str__(self):
       return('Gilbert-Elliott channel with parameters {}'.format((self.p, self.r, self.epsilon, self.k)))
+    def to(self, device):
+      self.p = self.p.to(device)
+      self.r = self.r.to(device)
+      self.epsilon = self.epsilon.to(device)
+      self.k = self.k.to(device)
+      self.state = self.state.to(device)
+      self.device = device
+      self.output = self.output.to(device)
+      return(self)
 
 class Fritchman():
     def __init__(self, alpha, beta, epsilon, M):
@@ -61,11 +73,9 @@ class EnvFeedbackGeneral(gym.Env):
         self.Tf = torch.tensor([Tf])
         self.alpha = torch.tensor([alpha])
         self.beta = torch.tensor([beta])
-        self.channel = []
-        for i in range(batch):
-          self.channel.append(copy.deepcopy(channel))
+        self.channel = channel
         #action space
-        self.actions = ['send', 'silence'];
+        self.actions = torch.tensor([1, 0])
         self.action_space = spaces.Discrete(2)
         self.batch = batch
         self.device = 'cpu'
@@ -81,47 +91,21 @@ class EnvFeedbackGeneral(gym.Env):
         self.array = {}
         
     def step(self, action):
-        reward = torch.zeros((self.batch, 1)).to(self.device)
-        success = torch.zeros((self.batch, 1)).type(torch.int64).to(self.device)
-        if not isinstance(action, list):
-          raise TypeError('Expected a list of actions, instead got type {}'.format(type(action)))
-        if len(action) != self.batch:
-          raise TypeError('Expected a list of length {}, instead, got length {}'.format(self.batch, len(action)))
+        success = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        reward = (torch.logical_not(success)) * (-action.reshape(len(action)) - self.alpha)
 
-        for j in range(self.batch):
-            #Perform action at time instant t
-            if torch.all( torch.eq(  self.agent_state[j], self.finish_state[j] ) ):
-              success[j] = True
-              continue 
+        self.agent_state[:, 0] = action.reshape((len(action),))
 
-            if action[j] in self.actions:
-              if action[j] == 'send':
-                self.agent_state[j, 0] = 1
-                reward[j] = -1 - self.alpha
-              else:
-                self.agent_state[j, 0] = 0
-                reward[j] = 0 - self.alpha
-            else:
-              raise ValueError('Action should be either \'send\' or \'silence\'. Got {}'.format(print(action)))
-            #Verify if there is a need to go to time instat t+1
-            temp = self.agent_state[j, self.Tf-1]
-            temp = temp.type(torch.int64)
-            channel = self.channel[j]
-            temp2 = channel.step()
-            success[j] = temp & temp2
+        temp = self.agent_state[:, self.Tf - 1].type(torch.int64).reshape(self.batch) == 1
+        temp2 = self.channel.step()
 
-            if success[j]:
-              reward[j] = reward[j] + self.beta
-              self.agent_state[j] = self.finish_state[j]
-            else: 
-              #Go to time instant t + 1
-              for t in range(self.Tf - 1,0,-1):
-                self.agent_state[j, t] = self.agent_state[j, t-1]
-              self.agent_state[j, 0] = 0
-        done = torch.tensor([1]).to(self.device)
-        for j in range(self.batch):
-          done = done & success[j]
-
+        new_success = (temp2 & temp)
+        success = new_success | success
+        reward[new_success == 1] = reward[new_success == 1] + self.beta
+        self.agent_state[success == 1] = copy.deepcopy(self.finish_state[success == 1])
+        self.agent_state = torch.roll(self.agent_state, 1, 1)
+        self.agent_state[ success == 0, 0] = 0
+        done = torch.all(success)
         return(self.agent_state, reward, done, success)
     def reset(self):
         self.agent_state = copy.deepcopy(self.start_state)
@@ -136,6 +120,7 @@ class EnvFeedbackGeneral(gym.Env):
         self.Tf = self.Tf.to(device)
         self.alpha = self.alpha.to(device)
         self.beta = self.beta.to(device)
+        self.actions = self.actions.to(device)
         self.device = device
         return(self)
 

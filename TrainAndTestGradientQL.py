@@ -20,71 +20,80 @@ else:
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
-    Channel_Local = copy.deepcopy(Channel)
+    Channel_Local = copy.deepcopy(Channel).to(device)
     alpha_reward = alpha_reward.to(device)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
     TransEnv = TransEnv.to(device)
-    
+    t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
-
-    result = Test(TransEnv, Q, Nit)
+    t1 = time.time()
+    print('Training takes {} seconds'.format(t1 - t0))
+    t0 = time.time()
+    result = Test(TransEnv, Q, Nit, batch)
+    t1 = time.time()
+    print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    with open('Data/AgentCNNRLresultsTestBatch.pickle', 'ab') as f:
-      pickle.dump(result, f)
+    # with open('Data/AgentCNNRLresultsTestBatch.pickle', 'ab') as f:
+    #   pickle.dump(result, f)
 
     return(result)
 
 def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
+    lr_list = [0.01, 0.001, 0.001, 0.001, 0.001]
     for i in range(len(num_episodes)):
-        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
+        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 5, lr = lr_list[i])
     
     return(Qfunction, policy)
 
-def Test(env, Q, Nit):
-    reward_save = np.zeros((Nit, 4))
-    for i in range(Nit):
+def Test(env, Q, Nit, batch):
+    device = env.device
+    reward_acc = torch.zeros(batch).to(device)
+    transmissions = torch.zeros(batch).to(device)
+    time_instant = torch.zeros(batch).to(device)
+    number_successes = torch.zeros(batch).to(device)
+
+    reward_save = torch.empty((0, 4)).to(device)
+    for i in range(int(Nit/batch)):
         done = 0
+        reward_acc[:] = 0
+        transmissions[:] = 0
+        time_instant[:] = 1
+        number_successes[:] = 0
         state = env.reset()
-        reward_acc = 0
-        transmissions = 0
-        time_instant = 0
-        number_successes = 0
         while 1:
           action_index = torch.argmax(Q(state), dim = 1)
-
           # take action and get reward, transit to next state
-          if action_index == 0:
-            transmissions += 1
+          transmissions = transmissions + action_index.reshape(len(action_index))
 
-          next_state, reward, done, SuccessF = env.step(env.actions[action_index])
+          next_state, reward, done, SuccessF = env.step(action_index)
 
 
           # Update statistics
-          reward_acc += reward
-          time_instant += 1
+          reward_acc += reward.reshape(len(reward))
+          time_instant[ torch.logical_not(SuccessF)] += 1
           state = next_state
-          if time_instant > env.Tf and transmissions == 0:
+          if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
             print('Learned bad policy')
             break
           if done:
-            if SuccessF:
-              number_successes += 1
             break
-        reward_save[i][0] = reward_acc
-        reward_save[i][1] = transmissions
-        reward_save[i][2] = time_instant
-        reward_save[i][3] = number_successes
         
-    average_reward = np.mean(reward_save[:, 0])
-    average_transmissions = np.mean(reward_save[:, 1])
-    average_recovery = np.mean(reward_save[:, 2]) - env.Tf
+        temp = torch.cat( (reward_acc.reshape(batch, 1), transmissions.reshape(batch, 1), time_instant.reshape(batch, 1), number_successes.reshape(batch, 1)), dim = 1)
+        reward_save = torch.cat( (reward_save, copy.deepcopy(temp)), dim = 0)
+        
+    average_reward = torch.mean(reward_save[:, 0])
+    average_transmissions = torch.mean(reward_save[:, 1])
+    average_recovery = torch.mean(reward_save[:, 2]) - env.Tf
+
+    print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
     
     return(average_reward, average_transmissions, average_recovery)
 
-Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
-alpha_range = torch.arange(0.1, 5.5, 0.1)
+
+#alpha_range = torch.arange(0.1, 5.5, 0.1)
+alpha_range = torch.tensor([1.4])
 beta_reward = 5
 Tf = 10
 Nit = 10000
@@ -93,10 +102,12 @@ discount_factor = 0.95
 
 batches = 10
 
-num_episodes = [int(2000/batches), int(2000/batches), int(10000/batches), int(20000/batches), int(50000/batches)]
+Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
 
-store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+num_episodes = [int(200/batches), int(200/batches), int(1000/batches), int(2000/batches), int(5000/batches)]
 
-with open('Data/AgentCNNRLresultsTestBatch.pickle', 'wb') as f:
-    pickle.dump(store_results, f)
+#store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
+# with open('Data/AgentCNNRLresultsTestBatch.pickle', 'wb') as f:
+#     pickle.dump(store_results, f)
 
