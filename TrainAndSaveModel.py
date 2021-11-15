@@ -4,8 +4,14 @@ import dill
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as EnvsNN
 import torch
+import sys
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+params = sys.argv
+if len(params) < 3:
+    raise RuntimeError('Error: missing output file or alpha')
+output_file = 'Data/'+params[1]
+alpha = float(params[2])
 
 def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(device)
@@ -15,9 +21,9 @@ def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     
     return(Qfunction, policy, Debug)
 
-batches = 8
+batches = 40
 Channel = EnvsNN.GilbertElliott(0.25, 0.25, 0, 1, batches).to(device)
-TransEnv = EnvsNN.EnvFeedbackGeneral(10, 1.4, 5, Channel, batches)
+TransEnv = EnvsNN.EnvFeedbackGeneral(10, alpha, 5, Channel, batches)
 TransEnv = TransEnv.to(device)
 
 num_episodes = [2000, 2000, 10000, 20000, 50000]
@@ -30,7 +36,7 @@ t1 = time()
 
 print('Training NN takes {} seconds'.format(t1-t0))
 
-with open('Data/SaveModelCNN.pickle', 'wb') as f:
+with open(output_file, 'wb') as f:
 	pickle.dump(QNN, f)
 
 with open('Data/SaveDebugCNN.pickle', 'wb') as f:
