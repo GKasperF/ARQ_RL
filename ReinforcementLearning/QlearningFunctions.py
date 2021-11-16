@@ -154,7 +154,9 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     action_index = torch.tensor([]).to(device)
     actions = torch.tensor([]).to(device)
 
-    Debug = torch.tensor([]).to(device)
+    Debug1 = torch.tensor([]).to(device)
+    state_of_interest = torch.tensor([[0., 1., 0., 0., 0., 0., 0., 0., 0., 0]]).to(device)
+    Debug2 = torch.tensor([]).to(device)
 
     Probability_Basis = epsilon/env.action_space.n * torch.ones((env.batch, 1)).to(device)
     Sum_Probability = (1.0 - epsilon)*torch.ones((env.batch), 1).to(device)
@@ -212,10 +214,13 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
         loss.backward()
         optimizer.step()
 
-        Debug = torch.cat((Debug, loss.reshape(1,1)))
+        Debug1 = torch.cat((Debug1, loss.reshape(1,1)))
+        Debug2 = torch.cat((Debug2, Qfunction(state_of_interest)))
 
     policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
-    Debug = Debug.detach().to('cpu').numpy()
+    Debug1 = Debug1.detach().to('cpu').numpy()
+    Debug2 = Debug2.detach().to('cpu').numpy()
+    Debug = [Debug1, Debug2]
        
     return Qfunction, policy, Debug
 
