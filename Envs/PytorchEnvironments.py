@@ -8,7 +8,21 @@ import gym
 from gym import error, spaces, utils
 import copy
 from gym.utils import seeding
+
+class iidchannel():
+    def __init__(self, epsilon, batch = 1):
+        self.epsilon = epsilon * torch.ones(batch)
+        self.batch = batch
+        self.device = 'cpu'
     
+    def step(self):
+        output = torch.bernoulli(1- self.epsilon)
+        return output.type(torch.int64)
+    def to(self, device):
+        self.epsilon = self.epsilon.to(device)
+        self.device = device
+        return self
+
 class GilbertElliott():
     def __init__(self, p, r, k, epsilon, batch = 1):
       self.p = p * torch.ones(batch)
@@ -123,11 +137,3 @@ class EnvFeedbackGeneral(gym.Env):
         self.actions = self.actions.to(device)
         self.device = device
         return(self)
-
-class iidchannel():
-    def __init__(self, epsilon):
-        self.epsilon = epsilon
-    
-    def step(self):
-        output = np.random.binomial(1, 1- self.epsilon)
-        return output

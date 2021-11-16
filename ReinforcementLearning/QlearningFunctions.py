@@ -212,7 +212,7 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
         loss.backward()
         optimizer.step()
 
-        Debug = torch.cat((Debug, loss))
+        Debug = torch.cat((Debug, loss.reshape(1,1)))
 
     policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
     Debug = Debug.detach().to('cpu').numpy()
