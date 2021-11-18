@@ -10,7 +10,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 params = sys.argv
 if len(params) < 3:
     raise RuntimeError('Error: missing output file or alpha')
-# params = ['nothing', 'TestNewTraining.pickle', '1.4']
+#params = ['nothing', 'TestNewTraining.pickle', '1.4']
 
 output_file = 'Data/'+params[1]
 alpha = float(params[2])
@@ -20,6 +20,8 @@ def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     lr_list = [0.001, 0.001, 0.001, 0.0001, 0.00001]
     for i in range(len(num_episodes)):
         Qfunction, policy, Debug = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 10, UpdateTargetEpisodes= 100, lr = lr_list[i])
+        with open(output_file, 'wb') as f:
+	        pickle.dump(Qfunction, f)
     
     return(Qfunction, policy, Debug)
 
