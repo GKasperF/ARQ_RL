@@ -21,12 +21,18 @@ else:
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel).to(device)
+    string_alpha = str(alpha_reward.numpy())
     alpha_reward = alpha_reward.to(device)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
     TransEnv = TransEnv.to(device)
+    model_file = 'ModelCNNBatch'+string_alpha+'.pickle'
     t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
     t1 = time.time()
+    
+    with open('Data/'+model_file, 'wb') as f:
+      pickle.dump(Q, f)    
+
     print('Training takes {} seconds'.format(t1 - t0))
     t0 = time.time()
     result = Test(TransEnv, Q, Nit, batch)
@@ -34,14 +40,14 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    # with open('Data/AgentCNNRLresultsTestBatch.pickle', 'ab') as f:
-    #   pickle.dump(result, f)
+    with open('Data/AgentCNNRLresultsTestBatch.pickle', 'ab') as f:
+      pickle.dump(result, f)
 
     return(result)
 
 def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
-    lr_list = [0.01, 0.001, 0.001, 0.001, 0.001]
+    lr_list = [0.001, 0.001, 0.001, 0.0001, 0.00001]
     for i in range(len(num_episodes)):
         Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 5, lr = lr_list[i])
     
@@ -93,21 +99,20 @@ def Test(env, Q, Nit, batch):
 
 
 #alpha_range = torch.arange(0.1, 5.5, 0.1)
-alpha_range = torch.tensor([1.4])
+alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
 Nit = 10000
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 
-batches = 10
+batches = 100
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
 
-num_episodes = [int(200/batches), int(200/batches), int(1000/batches), int(2000/batches), int(5000/batches)]
+num_episodes = [int(2000/batches), int(2000/batches), int(10000/batches), int(20000/batches), int(50000/batches)]
 
-#store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
-store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-# with open('Data/AgentCNNRLresultsTestBatch.pickle', 'wb') as f:
-#     pickle.dump(store_results, f)
-
+store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+#store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
+with open('Data/AgentCNNRLresultsTestBatch.pickle', 'wb') as f:
+    pickle.dump(store_results, f)
