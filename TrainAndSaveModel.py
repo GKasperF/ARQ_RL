@@ -23,12 +23,12 @@ def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     
     return(Qfunction, policy, Debug)
 
-batches = 100
+batches = 1000
 Channel = EnvsNN.GilbertElliott(0.25, 0.25, 0, 1, batches).to(device)
 TransEnv = EnvsNN.EnvFeedbackGeneral(10, alpha, 5, Channel, batches)
 TransEnv = TransEnv.to(device)
 
-num_episodes = [2000, 2000, 10000, 20000, 50000]
+num_episodes = [20000, 20000, 100000, 200000, 500000]
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 
