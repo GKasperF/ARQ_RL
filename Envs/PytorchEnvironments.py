@@ -124,6 +124,10 @@ class EnvFeedbackGeneral(gym.Env):
     def reset(self):
         self.agent_state = copy.deepcopy(self.start_state)
         return(self.agent_state)
+    def reset_success(self):
+        success_indices = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        self.agent_state[success_indices] = copy.deepcopy(self.start_state[success_indices])
+        return(self.agent_state)
     def finish(self):
         self.agent_state = copy.deepcopy(self.finish_state)
         return(self.agent_state)

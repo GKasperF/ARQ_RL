@@ -49,7 +49,7 @@ def Train(env, discount_factor, num_episodes, epsilon):
     Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
     lr_list = [0.001, 0.001, 0.001, 0.0001, 0.00001]
     for i in range(len(num_episodes)):
-        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 5, lr = lr_list[i])
+        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 10, UpdateTargetEpisodes= 100, lr = lr_list[i])
     
     return(Qfunction, policy)
 
@@ -110,7 +110,7 @@ batches = 100
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
 
-num_episodes = [int(2000/batches), int(2000/batches), int(10000/batches), int(20000/batches), int(50000/batches)]
+num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
