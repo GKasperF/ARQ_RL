@@ -166,6 +166,7 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     Qtarget = copy.deepcopy(Qfunction)
     num_successes = torch.zeros(1).to(device)
     count0 = 0
+    rewards_acc = torch.zeros((env.batch, 1)).to(device)
     # For every episode
     while num_finished_episodes < num_episodes:
         # get probabilities of all actions from current state
@@ -181,6 +182,11 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
         state, reward, done, SuccessF = env.step(action_index)
         next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
         rewards = torch.cat((rewards, reward))
+        
+        rewards_acc += reward.reshape(rewards_acc.shape)
+        if torch.sum(SuccessF) > 0:
+            Debug2 = torch.cat((Debug2, torch.mean(rewards_acc[SuccessF==1]).reshape(1) ))
+            rewards_acc[SuccessF==1] = 0
 
         num_successes += torch.sum(SuccessF)
         count0 += torch.sum(SuccessF)
@@ -213,7 +219,6 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
             num_successes = 0
 
             Debug1 = torch.cat((Debug1, loss.reshape(1,1)))
-            Debug2 = torch.cat((Debug2, Qfunction(state_of_interest)))
 
         if count0 > UpdateTargetEpisodes:
             Qtarget = copy.deepcopy(Qfunction)
