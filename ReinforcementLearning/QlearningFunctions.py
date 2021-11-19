@@ -198,7 +198,7 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
             BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
             td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
             td_target = td_target.detach()
-            for i in range(num_successes):
+            for i in range(num_successes.type(torch.int64)):
                 Qestimates = Qfunction(states)
                 td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
                 loss = criterion(td_estimate, td_target)
