@@ -68,10 +68,11 @@ def Test(env, Q, Nit, batch):
         time_instant[:] = 1
         number_successes[:] = 0
         state = env.reset()
+        SuccessF = torch.zeros(batch).to(device)
         while 1:
           action_index = torch.argmax(Q(state), dim = 1)
           # take action and get reward, transit to next state
-          transmissions = transmissions + action_index.reshape(len(action_index))
+          transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]
 
           next_state, reward, done, SuccessF = env.step(action_index)
 
