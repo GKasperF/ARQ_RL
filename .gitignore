@@ -5,12 +5,12 @@ TestArchive.py
 SeeDebug.py
 SeePolicy.py
 TestDebug.py
-TrainingDebugTimes.txt
 PrintOptimalPolicies.py
-OptimalPolicies.txt
 
 DebugScript.py
 ReadAndResave.py
 TestEnvironment.py
 *.prof
 *.pickle
+*.txt
+!requirements.txt
