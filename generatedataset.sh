@@ -7,4 +7,8 @@
 
 module load anaconda3/2021.05
 source activate pytorch_env
+<<<<<<< Updated upstream
 python3 ./GenerateEpisodes.py
+=======
+python3 ./GenerateEpisodes.py
+>>>>>>> Stashed changes
