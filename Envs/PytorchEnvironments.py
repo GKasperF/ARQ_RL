@@ -83,7 +83,7 @@ class Fritchman():
         return(output)
 
 class EnvFeedbackGeneral(gym.Env):
-    def __init__(self, Tf, alpha, beta, channel, batch):
+    def __init__(self, Tf, alpha, beta, channel, batch, M = 0):
         self.Tf = torch.tensor([Tf])
         self.alpha = torch.tensor([alpha])
         self.beta = torch.tensor([beta])
@@ -93,13 +93,14 @@ class EnvFeedbackGeneral(gym.Env):
         self.action_space = spaces.Discrete(2)
         self.batch = batch
         self.device = 'cpu'
+        self.M = M
         
         #observation space
-        self.observation_space = spaces.MultiBinary(Tf)
+        self.observation_space = spaces.MultiBinary(Tf+M)
 
-        self.start_state = torch.zeros((batch, Tf))
+        self.start_state = torch.zeros((batch, Tf+M))
         self.agent_state = copy.deepcopy(self.start_state)
-        self.finish_state = 2*torch.ones((batch, Tf))
+        self.finish_state = 2*torch.ones((batch, Tf+M))
     
         #Probability array
         self.array = {}
