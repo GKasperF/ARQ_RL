@@ -7,4 +7,4 @@
 
 module load anaconda3/2021.05
 source activate pytorch_env
-python3 ./TrainAndSaveModel.py GenerateEpisodes.py
+python3 ./GenerateEpisodes.py
