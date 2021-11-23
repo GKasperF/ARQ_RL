@@ -72,7 +72,7 @@ class CPU_Unpickler(pickle.Unpickler):
 
 all_results = []
 
-path = 'Data/ModelCNNBatch_Memory*.pickle'
+path = 'Data/ModelCNNFromDataset_Memory*.pickle'
 for filename in glob.glob(path):
   with open(filename, 'rb') as f:
     Q = CPU_Unpickler(f).load()
@@ -85,5 +85,5 @@ for filename in glob.glob(path):
   print('Testing takes {} seconds'.format(t1-t0))
   all_results.append(results)
 
-with open('Data/AgentCNNRLresultsTestBatch_Memory1.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_FromDataset_Memory1.pickle', 'wb') as f:
   pickle.dump(all_results, f)
