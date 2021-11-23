@@ -83,6 +83,6 @@ epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 alpha = [0.5, 0.2, 0.01, 0.001, 0.0001]
 store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel, M) for alpha_reward in alpha_range)
 
-with open('Data/AgentRLresults_Memory_FewEpisodes.pickle', 'wb') as f:
+with open('Data/AgentRLresults_Memory_FewEpisodes2.pickle', 'wb') as f:
     pickle.dump(store_results, f)
 
