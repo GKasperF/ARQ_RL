@@ -14,7 +14,7 @@ states = dataset[0]
 actions = dataset[1]
 next_states = dataset[3]
 discount_factor = 0.95
-batch_size = 1000
+batch_size = 10000
 
 alpha_range = torch.arange(0.1, 5.5, 0.1)
 for alpha_tmp in alpha_range:
@@ -29,7 +29,7 @@ for alpha_tmp in alpha_range:
     criterion = torch.nn.MSELoss(reduction='mean')
     optimizer = torch.optim.Adam(list(Q.parameters()), lr = 0.0001)
 
-    epochs = 5
+    epochs = 20
     num_updates = 5
     finish_state = env.finish_state[0]
 
