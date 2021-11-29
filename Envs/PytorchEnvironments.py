@@ -59,28 +59,43 @@ class GilbertElliott():
       return(self)
 
 class Fritchman():
-    def __init__(self, alpha, beta, epsilon, M):
-        self.state = 0
-        self.alpha = alpha
-        self.beta = beta
-        self.epsilon = epsilon
-        self.M = M
-        
+    def __init__(self, alpha, beta, epsilon, M, batch = 1):
+        self.state = torch.zeros(batch)
+        self.alpha = alpha * torch.ones(batch)
+        self.beta = beta * torch.ones(batch)
+        self.epsilon = epsilon * torch.ones(batch)
+        self.M = torch.tensor(M)
+        self.device = 'cpu'
+        self.batch = batch
+        self.output = torch.zeros(batch)
+
     def step(self):
-        if self.state == 0:
-            transition = np.random.binomial(1, self.alpha)
-            self.state = self.state + transition
-            output = np.random.binomial(1, 1 - self.epsilon)
-        else:
-            transition = np.random.binomial(1, self.beta)
-            output = np.random.binomial(1, self.epsilon)
-            if self.state == self.M:
-                if transition:
-                    self.state = 0
-            else:
-                self.state = self.state + transition
-                
-        return(output)
+        indices = []
+        for i in range(self.M):
+            indices.append( self.state == i)
+        
+        self.output[indices[0]] = torch.bernoulli(1 - self.epsilon)[indices[0]]
+        self.state[indices[0]] = self.state[indices[0]] + torch.bernoulli(self.alpha)[indices[0]]
+        for i in range(1, self.M):
+            self.output[indices[i]] = torch.bernoulli(self.epsilon)[indices[i]]
+            self.state[indices[i]] = torch.fmod(self.state[indices[i]] + torch.bernoulli(self.beta)[indices[i]], self.M)
+
+        return self.output.type(torch.int64)
+
+    def reset(self):
+      self.state = torch.zeros(self.batch).to(self.device)
+      return(self.state)
+    def __str__(self):
+      return('Fritchman channel with parameters {} at device {}'.format((self.alpha, self.beta, self.epsilon, self.M), self.device))
+    def to(self, device):
+      self.device = device
+      self.state = self.state.to(device)
+      self.alpha = self.alpha.to(device)
+      self.beta = self.beta.to(device)
+      self.epsilon = self.epsilon.to(device)
+      self.output = self.output.to(device)
+      self.M = self.M.to(device)
+      return(self)
 
 class EnvFeedbackGeneral(gym.Env):
     def __init__(self, Tf, alpha, beta, channel, batch, M = 0):

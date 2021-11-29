@@ -23,9 +23,9 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     Channel_Local = copy.deepcopy(Channel).to(device)
     string_alpha = str(alpha_reward.numpy())
     alpha_reward = alpha_reward.to(device)
-    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=0)
+    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
     TransEnv = TransEnv.to(device)
-    model_file = 'ModelCNNBatch_NoMemory'+string_alpha+'.pickle'
+    model_file = 'ModelCNNBatch_FritchmanBurstOnly'+string_alpha+'.pickle'
     t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
     t1 = time.time()
@@ -40,7 +40,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    with open('Data/AgentCNNRLresultsTestBatch_NoMemory.pickle', 'ab') as f:
+    with open('Data/AgentCNNRLresultsTestBatch_FritchmanBurstOnly.pickle', 'ab') as f:
       pickle.dump(result, f)
 
     return(result)
@@ -109,11 +109,12 @@ discount_factor = 0.95
 
 batches = 100
 
-Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
+#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
+Channel = Envs.Fritchman(0.25, 1, 0, 5, batches)
 
 num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNNRLresultsTestBatch_NoMemory.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_FritchmanBurstOnly.pickle', 'wb') as f:
     pickle.dump(store_results, f)
