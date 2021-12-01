@@ -3,15 +3,11 @@
 
 # In[1]:
 
-
 import numpy as np
-import time
-import sys
 import gym
 from gym import error, spaces, utils
 import copy
 from gym.utils import seeding
-import matplotlib.pyplot as plt
 
 
 # In[2]:
@@ -412,7 +408,7 @@ class GridEnvFeedbackFritchman(gym.Env):
 
 
 class EnvFeedbackGeneral(gym.Env):
-    def __init__(self, Tf, alpha, beta, channel):
+    def __init__(self, Tf, alpha, beta, channel, M = 0):
         self.Tf = Tf
         self.alpha = alpha
         self.beta = beta
@@ -420,11 +416,12 @@ class EnvFeedbackGeneral(gym.Env):
         #action space
         self.actions = ['send', 'silence'];
         self.action_space = spaces.Discrete(2)
+        self.M = M
         
         #observation space
-        self.observation_space = spaces.MultiBinary(Tf)
+        self.observation_space = spaces.MultiBinary(Tf+M)
 
-        self.start_state = np.zeros((Tf))
+        self.start_state = np.zeros((Tf+M))
         self.start_state = self.start_state.astype(int)
         self.agent_state = copy.deepcopy(self.start_state)
     
@@ -454,7 +451,7 @@ class EnvFeedbackGeneral(gym.Env):
           return(self.agent_state, reward, 1, success)
 
         #Go to time instant t + 1
-        for t in range(self.Tf - 1,0,-1):
+        for t in range(self.Tf + self.M - 1,0,-1):
           self.agent_state[t] = self.agent_state[t-1]
 
         self.agent_state[0] = 0
@@ -464,7 +461,7 @@ class EnvFeedbackGeneral(gym.Env):
         self.agent_state = copy.deepcopy(self.start_state)
         return(self.agent_state)
     def finish(self):
-        self.agent_state = 2*np.ones((self.Tf))
+        self.agent_state = 2*np.ones((self.Tf+self.M))
         self.agent_state = self.agent_state.astype(int)
         return(self.agent_state)
 class iidchannel():

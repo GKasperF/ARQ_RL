@@ -1,19 +1,16 @@
 import numpy as np
 import time
-import gym
-from gym import error, spaces, utils
 import copy
-from gym.utils import seeding
 from joblib import Parallel, delayed
 import multiprocessing
 import pickle
-import ReinforcementLearning.QlearningFunctions as QL
+import ReinforcementLearning.QlearningTable as QL
 import Envs.Environments as Envs
 from collections import defaultdict
 
-def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel):
+def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel, M):
     Channel_Local = copy.deepcopy(Channel)
-    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local)
+    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, M)
     
     Q, policy = Train(TransEnv, discount_factor, num_episodes, alpha, epsilon)
     
@@ -74,16 +71,18 @@ def Test(env, policy, Nit):
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
 num_cores = multiprocessing.cpu_count()
-alpha_range = np.arange(1.4, 1.71, 0.1)
+alpha_range = np.arange(0.1, 5.5, 0.1)
 beta_reward = 5
 Tf = 10
-Nit = 100000
+Nit = 500000
 discount_factor = 0.95
-num_episodes = [20000, 20000, 100000, 200000, 500000]
+#num_episodes = [100000, 100000, 500000, 1000000, 2500000]
+num_episodes = [2000, 2000, 10000, 20000, 50000]
+M = 1
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 alpha = [0.5, 0.2, 0.01, 0.001, 0.0001]
-store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel) for alpha_reward in alpha_range)
+store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel, M) for alpha_reward in alpha_range)
 
-with open('Data/AgentRLresults.pickle', 'wb') as f:
+with open('Data/AgentRLresults_Memory_FewEpisodes2.pickle', 'wb') as f:
     pickle.dump(store_results, f)
 

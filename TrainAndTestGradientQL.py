@@ -1,97 +1,120 @@
 import numpy as np
 import time
-import gym
-from gym import error, spaces, utils
 import copy
-from gym.utils import seeding
 from joblib import Parallel, delayed
 import multiprocessing
 import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
-from collections import defaultdict
+import torch
+
+q = []
+if torch.cuda.is_available():
+  num_cores = torch.cuda.device_count()
+  for i in range(num_cores):
+    q.append('cuda:'+'{}'.format(i))
+else:
+  num_cores = multiprocessing.cpu_count()
+  for i in range(num_cores):
+    q.append('cpu')
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
-    Channel_Local = copy.deepcopy(Channel)
-    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch)
-    
+    device = q.pop()
+    Channel_Local = copy.deepcopy(Channel).to(device)
+    string_alpha = str(alpha_reward.numpy())
+    alpha_reward = alpha_reward.to(device)
+    TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
+    TransEnv = TransEnv.to(device)
+    model_file = 'ModelCNNBatch_FritchmanBurstOnly'+string_alpha+'.pickle'
+    t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
+    t1 = time.time()
     
-    average_reward, average_transmissions, average_recovery = Test(TransEnv, policy, Nit)
-    
-    return(average_reward, average_transmissions, average_recovery)
+    with open('Data/'+model_file, 'wb') as f:
+      pickle.dump(Q, f)    
+
+    print('Training takes {} seconds'.format(t1 - t0))
+    t0 = time.time()
+    result = Test(TransEnv, Q, Nit, batch)
+    t1 = time.time()
+    print('Testing takes {} seconds'.format(t1 - t0))
+    q.append(device)
+
+    with open('Data/AgentCNNRLresultsTestBatch_FritchmanBurstOnly.pickle', 'ab') as f:
+      pickle.dump(result, f)
+
+    return(result)
 
 def Train(env, discount_factor, num_episodes, epsilon):
-    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n)
+    Qfunction = QL.QApproxFunction(env.observation_space.n, env.action_space.n, 1000).to(env.device)
+    lr_list = [0.001, 0.001, 0.001, 0.0001, 0.00001]
     for i in range(len(num_episodes)):
-        Q, policy = QL.GradientQLearning(env, num_episodes[i], Qfunction, discount_factor, epsilon[i])
+        Qfunction, policy, _ = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 10, UpdateTargetEpisodes= 100, lr = lr_list[i])
     
     return(Qfunction, policy)
 
-def Test(env, policy, Nit):
-    reward_save = np.zeros((Nit, 4))
-    for i in range(Nit):
+def Test(env, Q, Nit, batch):
+    device = env.device
+    reward_acc = torch.zeros(batch).to(device)
+    transmissions = torch.zeros(batch).to(device)
+    time_instant = torch.zeros(batch).to(device)
+    number_successes = torch.zeros(batch).to(device)
+
+    reward_save = torch.empty((0, 4)).to(device)
+    for i in range(int(Nit/batch)):
         done = 0
+        reward_acc[:] = 0
+        transmissions[:] = 0
+        time_instant[:] = 1
+        number_successes[:] = 0
         state = env.reset()
-        reward_acc = 0
-        transmissions = 0
-        time_instant = 0
-        number_successes = 0
+        SuccessF = torch.zeros(batch).to(device)
         while 1:
-          action_probabilities = policy(state)
-          action_index = np.random.choice(np.arange(
-                    len(action_probabilities)),
-                      p = action_probabilities)
-
+          action_index = torch.argmax(Q(state), dim = 1)
           # take action and get reward, transit to next state
-          if action_index == 0:
-            transmissions += 1
+          transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]
 
-          next_state, reward, done, SuccessF = env.step(env.actions[action_index])
+          next_state, reward, done, SuccessF = env.step(action_index)
 
 
           # Update statistics
-          reward_acc += reward
-          time_instant += 1
+          reward_acc += reward.reshape(len(reward))
+          time_instant[ torch.logical_not(SuccessF)] += 1
           state = next_state
-          if done:
-            if SuccessF:
-              number_successes += 1
+          if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
+            print('Learned bad policy')
             break
-            
-            
-        reward_save[i][0] = reward_acc
-        reward_save[i][1] = transmissions
-        reward_save[i][2] = time_instant
-        reward_save[i][3] = number_successes
+          if done:
+            break
         
-    average_reward = np.mean(reward_save[:, 0])
-    average_transmissions = np.mean(reward_save[:, 1])
-    average_recovery = np.mean(reward_save[:, 2]) - env.Tf
+        temp = torch.cat( (reward_acc.reshape(batch, 1), transmissions.reshape(batch, 1), time_instant.reshape(batch, 1), number_successes.reshape(batch, 1)), dim = 1)
+        reward_save = torch.cat( (reward_save, copy.deepcopy(temp)), dim = 0)
+        
+    average_reward = torch.mean(reward_save[:, 0])
+    average_transmissions = torch.mean(reward_save[:, 1])
+    average_recovery = torch.mean(reward_save[:, 2]) - env.Tf
+
+    print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
     
     return(average_reward, average_transmissions, average_recovery)
 
 
-#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
-Channel = Envs.iidchannel(0.25)
-#num_cores = multiprocessing.cpu_count()
-num_cores = 1
-#alpha_range = np.arange(1.4, 1.71, 0.1)
-alpha_range = [1.4]
+alpha_range = torch.arange(0.1, 5.5, 0.1)
+#alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
-Nit = 100000
+Nit = 10000
+epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
-#num_episodes = [20000, 20000, 100000, 200000, 500000]
-#epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 
-num_episodes = [1000]
-epsilon = [0.5]
+batches = 100
 
-batches = 1
+#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
+Channel = Envs.Fritchman(0.25, 1, 0, 5, batches)
 
-store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
-with open('Data/AgentNNRLresults.pickle', 'wb') as f:
+store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
+#store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
+with open('Data/AgentCNNRLresultsTestBatch_FritchmanBurstOnly.pickle', 'wb') as f:
     pickle.dump(store_results, f)
-
