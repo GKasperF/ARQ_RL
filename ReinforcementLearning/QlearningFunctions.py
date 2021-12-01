@@ -68,7 +68,7 @@ class QApproxFunction(torch.nn.Module):
     return output
 
 def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
-                            epsilon = 0.1, UpdateEpisodes = 10, lr = 0.001):
+                            epsilon = 0.1, UpdateEpisodes = 10, UpdateTargetEpisodes = 100, lr = 0.001):
     device = env.device
     
     criterion = torch.nn.MSELoss(reduction='mean')
@@ -81,57 +81,81 @@ def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
     actions = torch.tensor([]).to(device)
 
     Probability_Basis = epsilon/env.action_space.n * torch.ones((env.batch, 1)).to(device)
-    Sum_Probability = (1.0 - epsilon)*torch.ones((env.batch), 1).to(device)
-    Zeros_Tensor = torch.zeros((env.batch, 1)).to(device)
-
+    Sum_Probability = (1.0 - epsilon)*torch.ones((env.batch), 1).to(device).squeeze()
+    Zeros_Tensor = torch.zeros((env.batch, 1)).to(device).squeeze()
+    num_finished_episodes = 0
+    state = env.reset()
+    Qtarget = copy.deepcopy(Qfunction)
+    num_successes = torch.zeros(1).to(device)
+    count0 = 0
+    rewards_acc = torch.zeros((env.batch, 1)).to(device)
     # For every episode
-    for ith_episode in range(num_episodes):
-        # Reset the environment and pick the first action
-        state = env.reset()
-        states = states[0:0]
-        next_states = next_states[0:0]
-        rewards = rewards[0:0]
-        actions = actions[0:0]
-        if ith_episode % UpdateEpisodes == 0:
+    while num_finished_episodes < num_episodes:
+        # get probabilities of all actions from current state
+        best_action = torch.argmax(Qfunction(state), dim = 1)
+        action_probabilities = Probability_Basis + torch.where(best_action == 1, Sum_Probability, Zeros_Tensor).reshape(Probability_Basis.shape)
+        action_index = torch.bernoulli(action_probabilities[:, 0]) 
+        actions = torch.cat((actions, action_index), dim = 0)
+
+        #states.append(copy.deepcopy(state))
+        states = torch.cat((states, copy.deepcopy(state)), dim = 0)
+
+        # take action and get reward, transit to next state
+        state, reward, done, SuccessF = env.step(action_index)
+        next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
+        rewards = torch.cat((rewards, reward))
+        
+        rewards_acc += reward.reshape(rewards_acc.shape)
+        if torch.sum(SuccessF) > 0:
+            rewards_acc[SuccessF==1] = 0
+
+        num_successes += torch.sum(SuccessF)
+        count0 += torch.sum(SuccessF)
+        num_finished_episodes += torch.sum(SuccessF)
+
+        state = env.reset_success()
+
+        if num_successes > UpdateEpisodes:
+            Next_States_QValues = Qtarget(next_states)
+            finish_state = env.finish_state[0]
+            finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
+            finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
+            Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device), Next_States_QValues)
+
+            BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
+            td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
+            td_target = td_target.detach()
+            for i in range(num_successes.type(torch.int64)):
+                Qestimates = Qfunction(states)
+                td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
+                loss = criterion(td_estimate, td_target)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            states = states[0:0]
+            next_states = next_states[0:0]
+            rewards = rewards[0:0]
+            actions = actions[0:0]
+            num_successes = 0
+
+        if count0 > UpdateTargetEpisodes:
             Qtarget = copy.deepcopy(Qfunction)
-
-        for t in itertools.count():
-            # get probabilities of all actions from current state
-            best_action = torch.argmax(Qfunction(state), dim = 1)
-            action_probabilities = Probability_Basis + torch.where(best_action == 1, Sum_Probability.squeeze(), Zeros_Tensor.squeeze()).reshape(Probability_Basis.shape)
-            action_index = torch.bernoulli(action_probabilities[:, 0]) 
-            actions = torch.cat((actions, action_index), dim = 0)
-
-            #states.append(copy.deepcopy(state))
-            states = torch.cat((states, copy.deepcopy(state)), dim = 0)
-
-            # take action and get reward, transit to next state
-            state, reward, done, SuccessF = env.step(action_index)
-            next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
-            rewards = torch.cat((rewards, reward))
-            
-            if done:
-                break
+            count0 = 0
 
         
+    if len(states) > 0:    
         Next_States_QValues = Qtarget(next_states)
         finish_state = env.finish_state[0]
         finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
         finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
-        Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device) , Next_States_QValues)
+        Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device), Next_States_QValues)
 
         BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
         td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
-
         Qestimates = Qfunction(states)
-        unfinished_states_indices = torch.logical_not(torch.all(torch.eq(states, finish_state), dim = 1))
-
-        td_target = td_target[unfinished_states_indices]
         td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
-        td_estimate = td_estimate[unfinished_states_indices]
-
         loss = criterion(td_estimate, td_target.detach())
-        
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -250,71 +274,6 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     Debug = [Debug1, Debug2]
        
     return Qfunction, policy, Debug
-
-def GradientRandomQLearning(env, num_episodes, Qfunction , discount_factor = 1.0, UpdateEpisodes=10, lr = 0.001):
-    device = env.device
-    
-    criterion = torch.nn.MSELoss(reduction='mean')
-    optimizer = torch.optim.Adam(list(Qfunction.parameters()), lr = lr)
-    action_probabilities = 0.5 * torch.ones((env.batch,1)).to(device)
-    states = torch.tensor([]).to(device)
-    next_states = torch.tensor([]).to(device)
-    rewards = torch.tensor([]).to(device)
-    action_index = torch.tensor([]).to(device)
-    actions = torch.tensor([]).to(device)
-    # For every episode
-    for ith_episode in range(num_episodes):
-        # Reset the environment and pick the first action
-        state = env.reset()
-        states = states[0:0]
-        next_states = next_states[0:0]
-        rewards = rewards[0:0]
-        actions = actions[0:0]
-        if ith_episode % UpdateEpisodes == 0:
-            Qtarget = copy.deepcopy(Qfunction)
-        
-        for t in itertools.count():
-            # get probabilities of all actions from current state
-               
-            action_index = torch.bernoulli(action_probabilities)
-            actions = torch.cat((actions, action_index), dim = 0)
-            #states.append(copy.deepcopy(state))
-            states = torch.cat((states, copy.deepcopy(state)), dim = 0)
-
-            # take action and get reward, transit to next state
-            state, reward, done, SuccessF = env.step(action_index)
-            next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
-            rewards = torch.cat((rewards, reward))
-            
-            if done:
-                break
-
-        
-        Next_States_QValues = Qtarget(next_states)
-        finish_state = env.finish_state[0]
-        finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
-        finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
-        Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device) , Next_States_QValues)
-
-        BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
-        td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
-
-        Qestimates = Qfunction(states)
-        unfinished_states_indices = torch.logical_not(torch.all(torch.eq(states, finish_state), dim = 1))
-
-        td_target = td_target[unfinished_states_indices]
-        td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64).reshape(len(actions))].reshape( (len(states), 1))
-        td_estimate = td_estimate[unfinished_states_indices]
-
-        loss = criterion(td_estimate, td_target.detach())
-        
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
-       
-    return Qfunction, policy
 
 def GradientQLearningMC(env, num_episodes, Qfunction, epsilon = 0.1):
     """
