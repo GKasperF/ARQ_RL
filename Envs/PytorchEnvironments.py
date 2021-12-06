@@ -157,3 +157,78 @@ class EnvFeedbackGeneral(gym.Env):
         self.actions = self.actions.to(device)
         self.device = device
         return(self)
+
+class EnvFeedbackCheating_GE(gym.Env):
+    def __init__(self, Tf, alpha, beta, channel, batch):
+        self.Tf = torch.tensor([Tf])
+        self.alpha = torch.tensor([alpha])
+        self.beta = torch.tensor([beta])
+        self.channel = channel
+        #action space
+        self.actions = torch.tensor([1, 0])
+        self.action_space = spaces.Discrete(2)
+        self.batch = batch
+        self.device = 'cpu'
+
+        #observation space
+        self.observation_space = spaces.MultiBinary(2*Tf)
+        self.TransitionMatrix = torch.tensor([[ 1 - channel.p[0], channel.p[0]], [channel.r[0], 1 - channel.r[0]]])
+        self.p = 0.5*torch.ones((batch, 2))
+        self.start_state = torch.zeros((batch, 2*Tf))
+        self.start_state[:, Tf:2*Tf] = 0.5
+        self.agent_state = copy.deepcopy(self.start_state)
+        self.finish_state = 2*torch.ones((batch, 2*Tf))
+        self.failure_state = torch.tensor([[0.0, 1.0]]).repeat(batch, 1)
+        #Probability array
+        self.array = {}
+        
+    def step(self, action):
+        success = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        reward = (torch.logical_not(success)) * (-action.reshape(len(action)) - self.alpha)
+
+        self.agent_state[:, 0] = action.reshape((len(action),))
+
+        temp = self.agent_state[:, self.Tf - 1].type(torch.int64).reshape(self.batch) == 1
+        temp2 = self.channel.step()
+
+        new_success = (temp2 & temp)
+        success = new_success | success
+        reward[new_success == 1] = reward[new_success == 1] + self.beta
+        self.agent_state[success == 1] = copy.deepcopy(self.finish_state[success == 1])
+        self.agent_state = torch.roll(self.agent_state, 1, 1)
+        self.agent_state[ success == 0, 0] = 0
+
+        observed_failure = (temp & (temp2 == 0))
+        self.p[observed_failure == 1] = torch.matmul(self.failure_state[observed_failure==1], self.TransitionMatrix)
+        self.p[observed_failure == 0] = torch.matmul(self.p[observed_failure == 0], self.TransitionMatrix)
+
+        p_temp = copy.deepcopy(self.p)
+        for i in range( self.agent_state.size(1)-1, self.Tf-1, -1):
+          self.agent_state[success==0, i] = p_temp[success==0, 0]
+          p_temp = torch.matmul(p_temp, self.TransitionMatrix)
+
+        done = torch.all(success.type(torch.uint8))
+        return(self.agent_state, reward, done, success)
+    def reset(self):
+        self.agent_state = copy.deepcopy(self.start_state)
+        return(self.agent_state)
+    def reset_success(self):
+        success_indices = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        self.agent_state[success_indices] = copy.deepcopy(self.start_state[success_indices])
+        return(self.agent_state)
+    def finish(self):
+        self.agent_state = copy.deepcopy(self.finish_state)
+        return(self.agent_state)
+    def to(self, device):
+        self.start_state = self.start_state.to(device)
+        self.agent_state = self.agent_state.to(device)
+        self.finish_state = self.finish_state.to(device)
+        self.Tf = self.Tf.to(device)
+        self.alpha = self.alpha.to(device)
+        self.beta = self.beta.to(device)
+        self.actions = self.actions.to(device)
+        self.device = device
+        self.TransitionMatrix = self.TransitionMatrix.to(device)
+        self.p = self.p.to(device)
+        self.failure_state = self.failure_state.to(device)
+        return(self)
