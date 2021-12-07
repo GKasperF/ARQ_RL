@@ -52,7 +52,7 @@ import multiprocessing
 
 Tf = 10
 
-num_cores = 6
+num_cores = multiprocessing.cpu_count()
 
 store_results_heur = Parallel(n_jobs = num_cores)(delayed(TestHeuristic)(N_trans, N_zeros) for N_trans in range(1, Tf+1, 1) for N_zeros in range(Tf - N_trans, Tf, 1))
 

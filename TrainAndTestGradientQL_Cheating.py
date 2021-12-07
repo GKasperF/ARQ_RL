@@ -104,7 +104,7 @@ alpha_range = torch.arange(0.1, 5.5, 0.1)
 #alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
-Nit = 10000
+Nit = 100000
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 

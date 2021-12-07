@@ -4,61 +4,65 @@ from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
 
 store_results = []
 
-with open('Data/AgentCNNRLresults.pickle', 'rb') as f:
+#with open('Data/AgentCNNRLresults.pickle', 'rb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating.pickle', 'rb') as f:
     while 1:
         try:
             store_results = pickle.load(f)
         except (EOFError, pickle.UnpicklingError):
             break
 
-average_transmissions = [store_results[t][1] for t in range(len(store_results))]
-average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
+# average_transmissions = [store_results[t][1] for t in range(len(store_results))]
+# average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
 
-test = zip(average_transmissions, average_recovery)
-test = list(test)
-test = lower_convex_hull(test)
-i = 1
-while 1:
-	if test[0][0] == 0:
-		test.pop(0)
+average_transmissions = store_results[0][1]
+average_recovery = store_results[0][2]
 
-	if i == len(test):
-		break
-	point = test[i]
-	previous_point = test[i-1]
-	if point[0] > previous_point[0] and point[1] > previous_point[1]:
-		test.pop(i)
-	else:
-		i+=1
+# test = zip(average_transmissions, average_recovery)
+# test = list(test)
+# test = lower_convex_hull(test)
+# i = 1
+# while 1:
+# 	if test[0][0] == 0:
+# 		test.pop(0)
 
-average_transmissions = [test[t][0] for t in range(len(test))]
-average_recovery = [test[t][1] for t in range(len(test))]
+# 	if i == len(test):
+# 		break
+# 	point = test[i]
+# 	previous_point = test[i-1]
+# 	if point[0] > previous_point[0] and point[1] > previous_point[1]:
+# 		test.pop(i)
+# 	else:
+# 		i+=1
+
+# average_transmissions = [test[t][0] for t in range(len(test))]
+# average_recovery = [test[t][1] for t in range(len(test))]
 
 average_recovery = [x for _, x in sorted(zip(average_transmissions, average_recovery))]
 average_transmissions.sort()
 
-with open('Data/AgentRLresults.pickle', 'rb') as f:
+with open('Data/AgentRLresults_Memory_FewEpisodes.pickle', 'rb') as f:
     store_results2 = pickle.load(f)
 
 average_transmissions2 = [store_results2[t][1] for t in range(len(store_results2))]
 average_recovery2 = [store_results2[t][2] for t in range(len(store_results2))]
 
-test = zip(average_transmissions2, average_recovery2)
-test = list(test)
-test = lower_convex_hull(test)
-i = 1
-while 1:
-	if i == len(test):
-		break
-	point = test[i]
-	previous_point = test[i-1]
-	if point[0] > previous_point[0] and point[1] > previous_point[1]:
-		test.pop(i)
-	else:
-		i+=1
+# test = zip(average_transmissions2, average_recovery2)
+# test = list(test)
+# test = lower_convex_hull(test)
+# i = 1
+# while 1:
+# 	if i == len(test):
+# 		break
+# 	point = test[i]
+# 	previous_point = test[i-1]
+# 	if point[0] > previous_point[0] and point[1] > previous_point[1]:
+# 		test.pop(i)
+# 	else:
+# 		i+=1
 
-average_transmissions2 = [test[t][0] for t in range(len(test))]
-average_recovery2 = [test[t][1] for t in range(len(test))]
+# average_transmissions2 = [test[t][0] for t in range(len(test))]
+# average_recovery2 = [test[t][1] for t in range(len(test))]
 
 average_recovery2 = [x for _, x in sorted(zip(average_transmissions2, average_recovery2))]
 average_transmissions2.sort()
