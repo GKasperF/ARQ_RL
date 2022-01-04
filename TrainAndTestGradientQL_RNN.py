@@ -42,10 +42,11 @@ else:
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel).to(device)
+    RNN_Model_Local = copy.deepcopy(RNN_Model).to(device)
     string_alpha = str(alpha_reward.numpy())
     alpha_reward = alpha_reward.to(device)
     #TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
-    TransEnv = Envs.EnvFeedbackRNN_GE(Tf, alpha_reward, beta_reward, Channel_Local, RNN_Model, batch)
+    TransEnv = Envs.EnvFeedbackRNN_GE(Tf, alpha_reward, beta_reward, Channel_Local, RNN_Model_Local, batch)
     TransEnv = TransEnv.to(device)
     model_file = 'ModelCNNBatch_GE_RNN'+string_alpha+'.pickle'
     t0 = time.time()
