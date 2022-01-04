@@ -288,8 +288,8 @@ class EnvFeedbackRNN_GE(gym.Env):
 
         self.h = h_out
         self.c = c_out
-
-        self.agent_state[success == 0, self.Tf:] = estimate.reshape(self.batch, self.Tf)
+        estimate = estimate.reshape(self.batch, self.Tf)
+        self.agent_state[success == 0, self.Tf:] = estimate[success == 0, :]
 
         done = torch.all(success.type(torch.uint8))
         return(self.agent_state, reward, done, success)
