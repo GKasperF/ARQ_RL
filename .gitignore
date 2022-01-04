@@ -15,3 +15,4 @@ TestEnvironment.py
 *.txt
 !requirements.txt
 ComparePolicies.py
+.vscode/launch.json

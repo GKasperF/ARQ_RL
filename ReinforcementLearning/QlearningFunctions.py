@@ -198,13 +198,14 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
         action_probabilities = Probability_Basis + torch.where(best_action == 1, Sum_Probability, Zeros_Tensor).reshape(Probability_Basis.shape)
         action_index = torch.bernoulli(action_probabilities[:, 0]) 
         actions = torch.cat((actions, action_index), dim = 0)
-
-        #states.append(copy.deepcopy(state))
-        states = torch.cat((states, copy.deepcopy(state)), dim = 0)
+        
+        temp_state = copy.copy(state)
+        states = torch.cat((states, copy.deepcopy(temp_state)), dim = 0)
 
         # take action and get reward, transit to next state
         state, reward, done, SuccessF = env.step(action_index)
-        next_states = torch.cat((next_states, copy.deepcopy(state)), dim = 0)
+        next_state = copy.copy(state)
+        next_states = torch.cat((next_states, copy.deepcopy(next_state)), dim = 0)
         rewards = torch.cat((rewards, reward))
         
         rewards_acc += reward.reshape(rewards_acc.shape)
