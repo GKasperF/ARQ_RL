@@ -129,7 +129,7 @@ Nit = 100000
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 
-batches = 10
+batches = 100
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
 #Channel = Envs.Fritchman(0.25, 1, 0, 5, batches)
