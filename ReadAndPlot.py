@@ -105,4 +105,5 @@ average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_
 import matplotlib.pyplot as plt
 plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
 #plt.plot(average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
+plt.legend(('Neural Network (Cheating)', 'Table Lookup', 'Heuristic', 'Lower Bound'))
 plt.show()
