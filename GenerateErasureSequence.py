@@ -8,8 +8,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # class Fritchman():
 #     def __init__(self, alpha, beta, epsilon, M, batch = 1):
 
-Num_Samples = 1000000
-UpdateSteps = 10
+Num_Samples = 10000000
 batch_size = 1
 
 Channel_Sequence = torch.zeros(Num_Samples).to(device)
