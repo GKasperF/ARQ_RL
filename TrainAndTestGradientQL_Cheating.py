@@ -24,9 +24,9 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     string_alpha = str(alpha_reward.numpy())
     alpha_reward = alpha_reward.to(device)
     #TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
-    TransEnv = Envs.EnvFeedbackCheating_GE(Tf, alpha_reward, beta_reward, Channel_Local, batch)
+    TransEnv = Envs.EnvFeedbackCheating_Noisy_GE(Tf, alpha_reward, beta_reward, Channel_Local, batch)
     TransEnv = TransEnv.to(device)
-    model_file = 'ModelCNNBatch_GE_Cheating'+string_alpha+'.pickle'
+    model_file = 'ModelCNNBatch_GE_Cheating_Noisy'+string_alpha+'.pickle'
     t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
     t1 = time.time()
@@ -41,7 +41,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating.pickle', 'ab') as f:
+    with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating_Noisy.pickle', 'ab') as f:
       pickle.dump(result, f)
 
     return(result)
@@ -117,5 +117,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating_Noisy.pickle', 'wb') as f:
     pickle.dump(store_results, f)
