@@ -34,12 +34,12 @@ criterion = torch.nn.MSELoss(reduction='mean')
 Params_LSTM = list(RNN_Model.Layer1.parameters())
 Params_Linear = list(RNN_Model.FinalLayer.parameters())
 optimizer = torch.optim.Adam(Params_LSTM + Params_Linear)
-Num_Samples = 1000000
-UpdateSteps = 1000
+Num_Samples = 10000000
+UpdateSteps = 10000
 
 with open('Data/Channel_Sequence.pickle', 'rb') as f:
-  Channel_Sequence = pickle.load(f).to(device)
-  #Channel_Sequence = torch.load(f).to(device)
+  #Channel_Sequence = pickle.load(f).to(device)
+  Channel_Sequence = torch.load(f).to(device)
 
 h_in = torch.zeros((num_layers, batch_size, hidden_size)).to(device)
 c_in = torch.zeros((num_layers, batch_size, hidden_size)).to(device)
@@ -51,7 +51,7 @@ j=0
 temp = 0.5
 prob_trans = temp*torch.ones(1).to(device)
 for i in range(Num_Samples - Tf):
-  target = Channel_Sequence[i : i + Tf]
+  target = Channel_Sequence[i + 1 : i + 1 + Tf]
   transmission = torch.bernoulli(prob_trans).type(torch.uint8)
   state_in = torch.cat( ((Channel_Sequence[i].type(torch.uint8) & transmission).type(torch.float).reshape((batch_size, 1, 1)), transmission.type(torch.float).reshape((batch_size, 1, 1))), dim=2)
   estimate, (h_out, c_out) = RNN_Model(state_in, h_in, c_in)
