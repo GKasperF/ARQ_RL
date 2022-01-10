@@ -13,8 +13,8 @@ batch_size = 1
 
 Channel_Sequence = torch.zeros(Num_Samples).to(device)
 
-#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batch_size).to(device)
-Channel = Envs.Fritchman(0.25, 1, 0, 5, batch_size).to(device)
+Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batch_size).to(device)
+#Channel = Envs.Fritchman(0.25, 1, 0, 5, batch_size).to(device)
 for i in range(Num_Samples):
   Channel_Sequence[i] = Channel.step()
 
