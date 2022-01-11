@@ -279,7 +279,7 @@ class EnvFeedbackCheating_Noisy_GE(gym.Env):
 
         p_temp = copy.deepcopy(self.p)
         for i in range( self.agent_state.size(1)-1, self.Tf-1, -1):
-          self.agent_state[success==0, i] = p_temp[success==0, 0] + torch.rand( sum(success==0)).to(self.device)/50
+          self.agent_state[success==0, i] = p_temp[success==0, 0] + (torch.rand( sum(success==0)).to(self.device)/20 - 0.025)
           p_temp = torch.matmul(p_temp, self.TransitionMatrix)
 
         done = torch.all(success.type(torch.uint8))

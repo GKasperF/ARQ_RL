@@ -9,6 +9,8 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 class ChannelModel(torch.nn.Module):
   def __init__(self, hidden_size, num_layers, output_size):
     super(ChannelModel, self).__init__()
+    self.hidden_size = hidden_size
+    self.num_layers = num_layers
 
     self.Layer1 = torch.nn.LSTM(input_size = 2, hidden_size = hidden_size, num_layers = num_layers, batch_first = True)
     self.FinalLayer = torch.nn.Linear(hidden_size, output_size)
@@ -26,8 +28,11 @@ class ChannelModel(torch.nn.Module):
 #   save_loss = torch.load(f)
 #save_loss = save_loss[:-1]
 
-with open('Data/RNN_Model_Test3.pickle', 'rb') as f:
+with open('Data/RNN_Model_GE.pickle', 'rb') as f:
   RNN_Model = torch.load(f)
+
+RNN_Model.Layer1.proj_size = 0
+RNN_Model = RNN_Model.to(device)
 
 hidden_size = 10
 num_layers = 5
@@ -42,6 +47,14 @@ state_in1 = torch.tensor([1.0, 1.0]).to(device).reshape((batch_size, 1, 2))
 state_in2 = torch.tensor([0.0, 1.0]).to(device).reshape((batch_size, 1, 2))
 
 
+estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
+print(estimate)
+estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
+print(estimate)
+estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
+print(estimate)
+estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
+print(estimate)
 estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
 print(estimate)
 estimate, (h_in, c_in) = RNN_Model(state_in1, h_in, c_in)
@@ -72,8 +85,8 @@ estimate, (h_in, c_in) = RNN_Model(state_in0, h_in, c_in)
 print(estimate)
 
 
-import matplotlib.pyplot as plt
-plt.plot(range(len(save_loss)), save_loss)
-plt.show()
+# import matplotlib.pyplot as plt
+# plt.plot(range(len(save_loss)), save_loss)
+# plt.show()
 
 pass
