@@ -13,7 +13,7 @@ class ChannelModel(torch.nn.Module):
     super(ChannelModel, self).__init__()
     self.hidden_size = hidden_size
     self.num_layers = num_layers
-    
+
     self.Layer1 = torch.nn.LSTM(input_size = 2, hidden_size = hidden_size, num_layers = num_layers, batch_first = True)
     self.FinalLayer = torch.nn.Linear(hidden_size, output_size)
     self.prob_layer = torch.nn.Sigmoid()
@@ -122,7 +122,7 @@ def Test(env, Q, Nit, batch):
     return(average_reward, average_transmissions, average_recovery)
 
 
-alpha_range = torch.arange(0.1, 5.5, 0.1)
+alpha_range = torch.arange(2.6, 5.5, 0.1)
 #alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
@@ -139,5 +139,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3_Final.pickle', 'wb') as f:
     pickle.dump(store_results, f)

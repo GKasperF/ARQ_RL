@@ -5,18 +5,18 @@ from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
 store_results = []
 
 #with open('Data/AgentCNNRLresults.pickle', 'rb') as f:
-with open('Data/AgentCNNRLresultsTestBatch_GE_Cheating_Noisy.pickle', 'rb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3.pickle', 'rb') as f:
     while 1:
         try:
             store_results = pickle.load(f)
         except (EOFError, pickle.UnpicklingError):
             break
 
-# average_transmissions = [store_results[t][1] for t in range(len(store_results))]
-# average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
+average_transmissions = [store_results[t][1] for t in range(len(store_results))]
+average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
 
-average_transmissions = store_results[0][1]
-average_recovery = store_results[0][2]
+# average_transmissions = store_results[0][1]
+# average_recovery = store_results[0][2]
 
 # test = zip(average_transmissions, average_recovery)
 # test = list(test)
