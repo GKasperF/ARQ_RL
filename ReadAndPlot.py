@@ -5,7 +5,7 @@ from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
 store_results = []
 
 #with open('Data/AgentCNNRLresults.pickle', 'rb') as f:
-with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3.pickle', 'rb') as f:
+with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3_Final.pickle', 'rb') as f:
     while 1:
         try:
             store_results = pickle.load(f)
@@ -104,6 +104,8 @@ average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_
 
 import matplotlib.pyplot as plt
 plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
-#plt.plot(average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
 plt.legend(('Neural Network (With RNN)', 'Table Lookup', 'Heuristic', 'Lower Bound'))
+plt.xlabel('Average Number of Transmissions')
+plt.ylabel('Average Recovery Time')
+plt.grid()
 plt.show()
