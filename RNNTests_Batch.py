@@ -81,6 +81,8 @@ with open('Data/RNN_Model_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
 
 save_loss = save_loss[:-1]
 plt.plot(range(len(save_loss)), save_loss)
+plt.xlabel('Step')
+plt.ylabel('BCE Loss')
 plt.show()
 
 RNN_Model.Layer1.proj_size = 0
