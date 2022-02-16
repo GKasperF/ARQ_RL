@@ -198,6 +198,9 @@ def ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S):
     for t in range(len(S)):
         if S[t] == 1:
             TransitionTemp = np.linalg.matrix_power(P_matrix, t - last_erasure) 
+            Past_TransitionTemp = np.linalg.matrix_power(P_matrix, t - last_erasure-1) 
+
+            previous_state_prob = np.matmul(p0, Past_TransitionTemp)
             
             current_state_prob = np.matmul(p0, TransitionTemp) #Compute current state belief given that no new information has been received between this transmission and the last one.
 
@@ -213,7 +216,7 @@ def ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S):
 
             previous_erasures_prob = previous_erasures_prob * (1 - prob_success) #Compute the new probability that all transmissions fail.
             
-            temp = epsilon*(1 - alpha) * current_state_prob[0] / (1 - prob_success) + beta*epsilon * current_state_prob[1]/(1 - prob_success)
+            temp = epsilon*(1 - alpha) * previous_state_prob[0] / (1 - prob_success) + beta*epsilon * previous_state_prob[1]/(1 - prob_success) #Compute the new belief conditioning on an erasure at time t occuring
             p0 = np.array([temp, 1-temp])
             last_erasure = t
             
