@@ -180,3 +180,58 @@ def ProbabilitySchedulingGE_simple_dec(alpha, beta, Tf, T, S_dec):
     
     Expected_Transmissions, Expected_Delay = ProbabilitySchedulingGE_Simple(alpha, beta, Tf, S)
     return(Expected_Transmissions, Expected_Delay)
+
+def ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S):
+    #Assume we start each episode in the good state.
+    p0 = np.array([1, 0])
+    last_erasure = -1
+    previous_erasures_prob = 1 #Probability that previous packets have been lost
+    P_matrix = np.array([[1 - alpha, alpha], [beta, 1 - beta]]) #define the transition matrix. When we have no new information, update is p0 = p0 * P_matrix
+      
+    prob_tr = np.zeros(len(S)+1)
+    prob_N = np.zeros(np.sum(S)+1)
+    
+    for t in range(len(S)):
+        if S[t] == 1:
+            TransitionTemp = np.linalg.matrix_power(P_matrix, t - last_erasure) 
+            
+            current_state_prob = np.matmul(p0, TransitionTemp) #Compute current state belief given that no new information has been received between this transmission and the last one.
+
+            prob_success = current_state_prob[0] * (1 - epsilon) + current_state_prob[1] * (1 - h) #Compute probability of success given current belief
+            
+            prob_tr[t] = prob_success * previous_erasures_prob #Compute probability of success of the current transmission *and* failure of all previous transmissions
+            
+            last_index = np.minimum(t + Tf, len(S))
+            N_temp = np.sum(S[range(last_index)])
+            prob_N[N_temp] += prob_tr[t]
+
+            #Update for the next transmission:
+
+            previous_erasures_prob = previous_erasures_prob * (1 - prob_success) #Compute the new probability that all transmissions fail.
+            
+            temp = current_state_prob[0] * (epsilon*(1 - alpha)/( epsilon * (1 - alpha) + h*alpha )) + current_state_prob[1] * (beta*epsilon/(beta*epsilon + (1-beta)*h))
+            p0 = np.array([temp, 1-temp])
+            last_erasure = t
+            
+    
+    prob_tr[len(S)] = 1 - np.sum(prob_tr[range(len(S))])
+    
+    N_temp = np.sum(S)
+    prob_N[N_temp] += prob_tr[len(S)]
+    
+    tr = range(len(S)+1)
+    Nt = range(np.sum(S)+1)
+    
+    Expected_Delay = np.sum( np.multiply(tr, prob_tr))
+    Expected_Transmissions = np.sum( np.multiply(Nt, prob_N))
+    return(Expected_Transmissions, Expected_Delay)
+
+def ProbabilitySchedulingGE_full_dec(alpha, beta, epsilon, h, Tf, T, S_dec):
+    #Alpha = transition from good (0) to bad (1)
+    #beta = transition from bad to good
+    #epsilon = erasure probability in the good state (< 0.5)
+    #h = erasure probability in the bad state (>0.5)
+    S = dectobin(S_dec, T+1)
+    
+    Expected_Transmissions, Expected_Delay = ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S)
+    return(Expected_Transmissions, Expected_Delay)
