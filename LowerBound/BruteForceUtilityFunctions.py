@@ -213,7 +213,7 @@ def ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S):
 
             previous_erasures_prob = previous_erasures_prob * (1 - prob_success) #Compute the new probability that all transmissions fail.
             
-            temp = current_state_prob[0] * (epsilon*(1 - alpha)/( epsilon * (1 - alpha) + h*alpha )) + current_state_prob[1] * (beta*epsilon/(beta*epsilon + (1-beta)*h))
+            temp = epsilon*(1 - alpha) * current_state_prob[0] / (1 - prob_success) + beta*epsilon * current_state_prob[1]/(1 - prob_success)
             p0 = np.array([temp, 1-temp])
             last_erasure = t
             
