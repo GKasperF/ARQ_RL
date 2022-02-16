@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=40
-#SBATCH --job-name RL_TrainAndTest
+#SBATCH --job-name TestAllPoliciesFullGE
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --time=06:00:00
 

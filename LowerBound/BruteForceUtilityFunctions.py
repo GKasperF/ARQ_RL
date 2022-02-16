@@ -182,11 +182,15 @@ def ProbabilitySchedulingGE_simple_dec(alpha, beta, Tf, T, S_dec):
     return(Expected_Transmissions, Expected_Delay)
 
 def ProbabilitySchedulingGE_Full(alpha, beta, epsilon, h, Tf, S):
-    #Assume we start each episode in the good state.
+    #Assume we start each episode with a success at time t - Tf
     p0 = np.array([1, 0])
+    P_matrix = np.array([[1 - alpha, alpha], [beta, 1 - beta]]) #define the transition matrix. When we have no new information, update is p0 = p0 * P_matrix
+    TransitionTemp = np.linalg.matrix_power(P_matrix, -1 - (- Tf))
+    p0 = np.matmul(p0, TransitionTemp) #Knowing that t - Tf was a success, assume we have no new information about erasures until time t - 1.
+
     last_erasure = -1
     previous_erasures_prob = 1 #Probability that previous packets have been lost
-    P_matrix = np.array([[1 - alpha, alpha], [beta, 1 - beta]]) #define the transition matrix. When we have no new information, update is p0 = p0 * P_matrix
+    
       
     prob_tr = np.zeros(len(S)+1)
     prob_N = np.zeros(np.sum(S)+1)
