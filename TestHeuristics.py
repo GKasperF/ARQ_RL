@@ -5,8 +5,6 @@ import multiprocessing
 import pickle
 import Envs.Environments as Envs
 
-import matplotlib.pyplot as plt
-
 def TestHeuristic(N_trans, N_zeros):
     #Channel_Local = Envs.GilbertElliott(0.25, 0.25, 0, 1)
     Channel_Local = Envs.GilbertElliott(0.01, 0.25, 0.05, 1)
@@ -43,8 +41,6 @@ def TestHeuristic(N_trans, N_zeros):
         reward_save2[i][2] = time_instant - TransEnvTest.Tf
         reward_save2[i][3] = number_successes
 
-    plt.hist(reward_save2[:, 2], np.arange(-0.5, max(reward_save2[:, 2] + 0.5)),density=True)
-    plt.show()
     average_reward_heur = (np.mean(reward_save2[:, 0]))
     average_transmissions_heur = (np.mean(reward_save2[:, 1]))
     average_recovery_heur = (np.mean(reward_save2[:, 2]))
@@ -56,11 +52,9 @@ import multiprocessing
 
 Tf = 10
 
-TestHeuristic(10, 0)
+num_cores = multiprocessing.cpu_count()
 
-# num_cores = multiprocessing.cpu_count()
+store_results_heur = Parallel(n_jobs = num_cores)(delayed(TestHeuristic)(N_trans, N_zeros) for N_trans in range(1, Tf+1, 1) for N_zeros in range(Tf - N_trans, Tf, 1))
 
-# store_results_heur = Parallel(n_jobs = num_cores)(delayed(TestHeuristic)(N_trans, N_zeros) for N_trans in range(1, Tf+1, 1) for N_zeros in range(Tf - N_trans, Tf, 1))
-
-# with open('Data/HeuristicsResults_GE_Isolated.pickle', 'wb') as f:
-#     pickle.dump(store_results_heur, f)
+with open('Data/HeuristicsResults_GE_Isolated.pickle', 'wb') as f:
+    pickle.dump(store_results_heur, f)

@@ -62,7 +62,7 @@ average_transmissions_heur.sort()
 # average_transmissions_lb = [convex_hull_results[t][0] for t in range(len(convex_hull_results))]
 # average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_results))]
 
-with open('Data/BruteForceGEFull_BadStart.pickle', 'rb') as f:
+with open('Data/BruteForceGEFull_BadStart_Past.pickle', 'rb') as f:
     store_results_brute_force = pickle.load(f)
 
 convex_hull_results = lower_convex_hull(store_results_brute_force)

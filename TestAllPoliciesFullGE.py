@@ -11,8 +11,6 @@ beta = 0.25
 epsilon = 0.05
 h = 1
 
-# ProbabilitySchedulingGE_full_dec(alpha, beta, epsilon, h, Tf, T, 2**(T+1)-1)
-
 num_cores = multiprocessing.cpu_count()
 store_results = Parallel(n_jobs = num_cores)(delayed(ProbabilitySchedulingGE_full_dec)(alpha, beta, epsilon, h, Tf, T, i) for i in range(1,2**(T+1)) )
 
