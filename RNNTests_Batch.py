@@ -5,6 +5,8 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+from GenerateErasureSequence import Channel
+
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ChannelModel(torch.nn.Module):
@@ -27,7 +29,7 @@ class ChannelModel(torch.nn.Module):
 
 hidden_size = 10
 num_layers = 5
-batch_size = 10000
+batch_size = 1000
 Tf = 10
 
 RNN_Model = ChannelModel(hidden_size = hidden_size, num_layers = num_layers, output_size = Tf).to(device)
@@ -39,10 +41,17 @@ optimizer = torch.optim.Adam(Params_LSTM + Params_Linear)
 UpdateSteps = 1
 
 #with open('Data/TraceSets/distance_10m/Run3_10m.torch', 'rb') as f:
-with open('Data/GE_Sequence_Simple_Batches.pickle', 'rb') as f:
+with open('Data/GE_Sequence_Example_Batches.pickle', 'rb') as f:
   Channel_Sequence_All = torch.load(f).to(device)
+  Channel_Sequence_All = Channel_Sequence_All[:, 0:1000]
+  Channel_Sequence_All = Channel_Sequence_All.repeat(1, 1)
+# with open('Data/TraceSets/TraceUFSC_Failures.pth', 'rb') as f:
+#   Channel_Sequence_All = torch.load(f).to(device)
+#   Channel_Sequence_All = Channel_Sequence_All.repeat(610)
+#   Channel_Sequence_All = Channel_Sequence_All[0:10000000].reshape(10000, 1000)
 
-Num_Samples = Channel_Sequence_All.shape[1]
+#Num_Samples = Channel_Sequence_All.shape[1]
+Num_Samples = int( Channel_Sequence_All.shape[0]*Channel_Sequence_All.shape[1] / batch_size)
 Channel_Sequence_All = Channel_Sequence_All.reshape(batch_size, Num_Samples).to(device)
 
 update_count = 0
@@ -72,10 +81,13 @@ for i in range(Num_Samples - Tf):
         print(update_count, j)
     update_count = update_count + 1
 
-with open('Data/SaveLossRNN_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
+#with open('Data/SaveLossRNN_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
+#with open('Data/TraceUFSCFailuresTest_Loss.pickle', 'wb') as f:
+with open('Data/Example_Loss.pickle', 'wb') as f:
   torch.save(save_loss, f)
 
-with open('Data/RNN_Model_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
+#with open('Data/RNN_Model_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
+with open('Data/Example_Model.pickle', 'wb') as f:
   torch.save(RNN_Model, f)
 
 
