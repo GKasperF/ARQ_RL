@@ -8,5 +8,5 @@
 #SBATCH --account=rrg-khisti
 
 module load python/3.8.10
-source RLVirtualEnv/bin/activate
+source /scratch/kasperf/ARQ_RL/RLVirtualEnv/bin/activate
 python3 ./TrainAndTestGradientQL_RNN.py
