@@ -9,9 +9,4 @@
 
 module load python/3.8.10
 source /scratch/kasperf/ARQ_RL/RLVirtualEnv/bin/activate
-pip3 install numpy
-pip3 install joblib
-pip3 install gym
-pip3 install --no-index torch torchvision torchtext torchaudio
-
 python3 ./TrainAndTestGradientQL_RNN.py
