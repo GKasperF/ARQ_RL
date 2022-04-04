@@ -30,3 +30,4 @@ Data/Delays.pth
 *.bin
 ConvertTraceToErasureSequence.py
 DebugMath.py
+DebugScript2.py

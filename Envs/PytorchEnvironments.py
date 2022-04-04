@@ -64,6 +64,7 @@ class Fritchman():
         self.alpha = alpha * torch.ones(batch)
         self.beta = beta * torch.ones(batch)
         self.epsilon = epsilon * torch.ones(batch)
+        self.zeros_vector = torch.zeros(batch)
         self.M = torch.tensor(M)
         self.device = 'cpu'
         self.batch = batch
@@ -77,7 +78,7 @@ class Fritchman():
         self.output[indices[0]] = torch.bernoulli(1 - self.epsilon)[indices[0]]
         self.state[indices[0]] = self.state[indices[0]] + torch.bernoulli(self.alpha)[indices[0]]
         for i in range(1, self.M):
-            self.output[indices[i]] = torch.bernoulli(self.epsilon)[indices[i]]
+            self.output[indices[i]] = self.zeros_vector[indices[i]]
             self.state[indices[i]] = torch.fmod(self.state[indices[i]] + torch.bernoulli(self.beta)[indices[i]], self.M)
 
         return self.output.type(torch.int64)
@@ -95,6 +96,7 @@ class Fritchman():
       self.epsilon = self.epsilon.to(device)
       self.output = self.output.to(device)
       self.M = self.M.to(device)
+      self.zeros_vector = self.zeros_vector.to(device)
       return(self)
 
 class EnvFeedbackGeneral(gym.Env):

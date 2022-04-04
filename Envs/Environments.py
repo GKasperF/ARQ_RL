@@ -334,7 +334,7 @@ class Fritchman():
             output = np.random.binomial(1, 1 - self.epsilon)
         else:
             transition = np.random.binomial(1, self.beta)
-            output = np.random.binomial(1, self.epsilon)
+            output = np.random.binomial(1, 0)
             if self.state == self.M:
                 if transition:
                     self.state = 0

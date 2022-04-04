@@ -26,7 +26,7 @@ class ChannelModel(torch.nn.Module):
 
     return output, (h_out, c_out)
 
-with open('Data/RNN_Model_GE_Isolated_Erasures_Batch.pickle', 'rb') as f:
+with open('Data/GE_Isolated_Model_Example.pickle', 'rb') as f:
   RNN_Model = torch.load(f)
 
 q = []
@@ -48,7 +48,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     #TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
     TransEnv = Envs.EnvFeedbackRNN_GE(Tf, alpha_reward, beta_reward, Channel_Local, RNN_Model_Local, batch)
     TransEnv = TransEnv.to(device)
-    model_file = 'ModelCNNBatch_GE_Isolated_RNN'+string_alpha+'.pickle'
+    model_file = 'ModelCNN_GE_Isolated_Example_RNN'+string_alpha+'.pickle'
     t0 = time.time()
     Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
     t1 = time.time()
@@ -63,7 +63,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    with open('Data/AgentCNNRLresultsTestBatch_GE_Isolated_RNN.pickle', 'ab') as f:
+    with open('Data/AgentCNNRLresults_GE_Isolated_Example_RNN.pickle', 'ab') as f:
       pickle.dump(result, f)
 
     return(result)
@@ -133,12 +133,13 @@ discount_factor = 0.95
 batches = 100
 
 #Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
-Channel = Envs.GilbertElliott(0.01, 0.25, 0.05, 1, batches)
+#Channel = Envs.GilbertElliott(0.1, 0.25, 0.05, 1, batch_size).to(device)
+Channel = Envs.GilbertElliott(0.1, 0.25, 0.05, 1, batches)
 #Channel = Envs.Fritchman(0.25, 1, 0, 5, batches)
 
 num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNNRLresultsTestBatch_GE_Isolated_RNN_Final.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresults_GE_Isolated_Example_RNN_Final.pickle', 'wb') as f:
     pickle.dump(store_results, f)
