@@ -2,6 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:2
 #SBATCH --tasks-per-node=2
+#SBATCH --mem=64000M
 #SBATCH --job-name RL_TrainAndTest
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --time=23:00:00

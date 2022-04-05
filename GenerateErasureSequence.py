@@ -18,8 +18,8 @@ batch_size = 1
 # for i in range(Num_Samples):
 #   Channel_Sequence[i] = Channel.step()
 
-Num_Samples = 10000
-batch_size = 10000
+Num_Samples = 1000
+batch_size = 1000
 
 Channel_Sequence = torch.zeros(batch_size, Num_Samples).to(device)
 Current_State = torch.zeros(batch_size, Num_Samples).to(device)

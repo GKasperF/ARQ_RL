@@ -29,7 +29,7 @@ class ChannelModel(torch.nn.Module):
 
 hidden_size = 10
 num_layers = 5
-batch_size = 10000
+batch_size = 1000
 Tf = 10
 
 RNN_Model = ChannelModel(hidden_size = hidden_size, num_layers = num_layers, output_size = Tf).to(device)
