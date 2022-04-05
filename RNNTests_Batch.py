@@ -40,8 +40,7 @@ Params_Linear = list(RNN_Model.FinalLayer.parameters())
 optimizer = torch.optim.Adam(Params_LSTM + Params_Linear)
 UpdateSteps = 1
 
-#with open('Data/TraceSets/distance_10m/Run3_10m.torch', 'rb') as f:
-with open('Data/GE_Isolated_Sequence_Example.pickle', 'rb') as f:
+with open('Data/Fritchman_Sequence_Example.pickle', 'rb') as f:
   Channel_Sequence_All = torch.load(f).to(device)
   # Channel_Sequence_All = Channel_Sequence_All[:, 0:1000]
   # Channel_Sequence_All = Channel_Sequence_All.repeat(1, 1)
@@ -81,13 +80,11 @@ for i in range(Num_Samples - Tf):
         print(update_count, j)
     update_count = update_count + 1
 
-#with open('Data/SaveLossRNN_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
-#with open('Data/TraceUFSCFailuresTest_Loss.pickle', 'wb') as f:
-with open('Data/GE_Isolated_Loss_Example.pickle', 'wb') as f:
+with open('Data/Fritchman_Loss_Example.pickle', 'wb') as f:
   torch.save(save_loss, f)
 
 #with open('Data/RNN_Model_GE_Isolated_Erasures_Batch.pickle', 'wb') as f:
-with open('Data/GE_Isolated_Model_Example.pickle', 'wb') as f:
+with open('Data/Fritchman_Model_Example.pickle', 'wb') as f:
   torch.save(RNN_Model, f)
 
 
