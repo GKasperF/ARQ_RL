@@ -2,7 +2,21 @@ import pickle
 import numpy as np
 from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
 
-with open('Data/HeuristicsResults_Fritchman.pickle', 'rb') as f:
+with open('Data/AgentCNNRLresults_Fritchman_Example_RNN.pickle', 'rb') as f:
+    while 1:
+        try:
+            store_results = pickle.load(f)
+        except (EOFError, pickle.UnpicklingError):
+            break
+
+average_transmissions = [store_results[t][1] for t in range(len(store_results))]
+average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
+
+average_recovery = [x for _, x in sorted(zip(average_transmissions, average_recovery))]
+average_transmissions.sort()
+
+
+with open('Data/HeuristicsResults_Fritchman_Example.pickle', 'rb') as f:
     store_results_heur = pickle.load(f)
 
 average_transmissions_heur = [store_results_heur[t][1] for t in range(len(store_results_heur))]
@@ -18,7 +32,7 @@ average_recovery_heur = [test[t][1] for t in range(len(test))]
 average_recovery_heur = [x for _, x in sorted(zip(average_transmissions_heur, average_recovery_heur))]
 average_transmissions_heur.sort()
 
-with open('Data/BruteForceFritchmanFull.pickle', 'rb') as f:
+with open('Data/BruteForce_Fritchman_Example.pickle', 'rb') as f:
     store_results_brute_force = pickle.load(f)
 
 convex_hull_results = lower_convex_hull(store_results_brute_force)
@@ -49,9 +63,10 @@ average_transmissions_lb = [convex_hull_results[t][0] for t in range(len(convex_
 average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_results))]
 
 import matplotlib.pyplot as plt
-plt.plot(average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-r')
-plt.legend(('Heuristic', 'Lower Bound'))
+plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-r')
+plt.legend(('Proposed Scheme', 'Multi-burst Transmission', 'Lower Bound'))
 plt.xlabel('Average Number of Transmissions')
 plt.ylabel('Average Recovery Time')
+#plt.xlim((1.6, 12))
 plt.grid()
 plt.show()

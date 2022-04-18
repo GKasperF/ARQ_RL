@@ -15,29 +15,6 @@ with open('Data/AgentCNNRLresultsTestBatch_GE_RNN3_Final.pickle', 'rb') as f:
 average_transmissions = [store_results[t][1] for t in range(len(store_results))]
 average_recovery = [np.asscalar(store_results[t][2]) for t in range(len(store_results))]
 
-# average_transmissions = store_results[0][1]
-# average_recovery = store_results[0][2]
-
-# test = zip(average_transmissions, average_recovery)
-# test = list(test)
-# test = lower_convex_hull(test)
-# i = 1
-# while 1:
-# 	if test[0][0] == 0:
-# 		test.pop(0)
-
-# 	if i == len(test):
-# 		break
-# 	point = test[i]
-# 	previous_point = test[i-1]
-# 	if point[0] > previous_point[0] and point[1] > previous_point[1]:
-# 		test.pop(i)
-# 	else:
-# 		i+=1
-
-# average_transmissions = [test[t][0] for t in range(len(test))]
-# average_recovery = [test[t][1] for t in range(len(test))]
-
 average_recovery = [x for _, x in sorted(zip(average_transmissions, average_recovery))]
 average_transmissions.sort()
 
@@ -104,7 +81,7 @@ average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_
 
 import matplotlib.pyplot as plt
 plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
-plt.legend(('Neural Network (With RNN)', 'Table Lookup', 'Heuristic', 'Lower Bound'))
+plt.legend(('Proposed Scheme', 'Q-learning with Lookup Table', 'Multi-burst Transmission', 'Lower Bound'))
 plt.xlabel('Average Number of Transmissions')
 plt.ylabel('Average Recovery Time')
 plt.grid()
