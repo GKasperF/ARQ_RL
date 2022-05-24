@@ -63,7 +63,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     print('Testing takes {} seconds'.format(t1 - t0))
     q.append(device)
 
-    with open('Data/AgentCNNRLresults_Iid_Example_RNN.pickle', 'ab') as f:
+    with open('Data/AgentCNNRLresults_Iid_Example_RNN2.pickle', 'ab') as f:
       pickle.dump(result, f)
 
     return(result)
@@ -122,8 +122,8 @@ def Test(env, Q, Nit, batch):
     return(average_reward, average_transmissions, average_recovery)
 
 
-alpha_range = torch.arange(0.1, 5.5, 0.1)
-#alpha_range = torch.arange(2.8, 5.5, 0.1)
+#alpha_range = torch.arange(0.1, 5.5, 0.1)
+alpha_range = torch.arange(3.5, 5.5, 0.1)
 #alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
@@ -142,5 +142,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNNRLresults_Iid_Example_RNN_Final.pickle', 'wb') as f:
+with open('Data/AgentCNNRLresults_Iid_Example_RNN_Final2.pickle', 'wb') as f:
     pickle.dump(store_results, f)
