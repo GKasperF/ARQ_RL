@@ -122,8 +122,8 @@ def Test(env, Q, Nit, batch):
     return(average_reward, average_transmissions, average_recovery)
 
 
-#alpha_range = torch.arange(0.1, 5.5, 0.1)
-alpha_range = torch.arange(3.5, 5.5, 0.1)
+alpha_range = torch.arange(0.1, 5.5, 0.1)
+#alpha_range = torch.arange(3.5, 5.5, 0.1)
 #alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
