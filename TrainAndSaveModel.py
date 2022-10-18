@@ -21,8 +21,8 @@ def TrainDebugNN(env, discount_factor, num_episodes, epsilon):
     for i in range(len(num_episodes)):
         Qfunction, policy, Debug = QL.GradientQLearningDebug(env, num_episodes[i], Qfunction, discount_factor, epsilon[i], UpdateEpisodes= 10, UpdateTargetEpisodes= 100, lr = lr_list[i])
         with open(output_file, 'wb') as f:
-	        pickle.dump(Qfunction, f)
-    
+            pickle.dump(Qfunction, f)
+
     return(Qfunction, policy, Debug)
 
 batches = 1000
