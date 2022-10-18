@@ -24,15 +24,15 @@ batch_size = 1000
 Channel_Sequence = torch.zeros(batch_size, Num_Samples).to(device)
 Current_State = torch.zeros(batch_size, Num_Samples).to(device)
 #Channel = Envs.GilbertElliott(0.1, 0.25, 0.05, 1, batch_size).to(device)
-#Channel = Envs.GilbertElliott(0.25, 0.25, 0.0, 1, batch_size).to(device)
-Channel = Envs.Fritchman(0.1, 0.5, 0.05, 4, batch_size).to(device)
+Channel = Envs.GilbertElliott(0.25, 0.25, 0.0, 1, batch_size).to(device)
+#Channel = Envs.Fritchman(0.1, 0.5, 0.05, 4, batch_size).to(device)
 #Channel = Envs.iidchannel(0.1, batch_size).to(device)
 
 for i in range(Num_Samples):
   #Current_State[:, i] = Channel.state
   Channel_Sequence[:, i] = Channel.step()
 
-with open('Data/Fritchman_Sequence_Example.pickle', 'wb') as f:
+with open('Data/SimpleGE_Sequence_Example.pickle', 'wb') as f:
     torch.save(Channel_Sequence, f)
 
 # with open('Data/GE_Isolated_Sequence_Example.pickle', 'wb') as f:
