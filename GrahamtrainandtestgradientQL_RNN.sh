@@ -5,7 +5,7 @@
 #SBATCH --mem=64000M
 #SBATCH --job-name RL_TrainAndTest
 #SBATCH --mail-type=FAIL,BEGIN,END
-#SBATCH --time=5-23:00:00
+#SBATCH --time=3-23:00:00
 #SBATCH --account=rrg-khisti
 
 module load python/3.8.10
