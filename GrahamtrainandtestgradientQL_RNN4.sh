@@ -10,4 +10,4 @@
 
 module load python/3.8.10
 source RLVirtualEnv/bin/activate
-python3 ./TrainAndTestGradientQL_RNN.py
+python3 ./TrainAndTestGradientQL_RNN4.py
