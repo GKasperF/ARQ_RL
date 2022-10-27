@@ -54,7 +54,7 @@ def Test(env, Q, Nit, batch=1):
           break
       time_save = torch.cat((time_save, copy.deepcopy(time_instant.reshape(batch, 1))))
 
-  TimeReceived = torch.arange(start=0, end=Nit)
+  TimeReceived = torch.arange(start=0, end=Nit).to(device)
   time_save = time_save.reshape(TimeReceived.shape)
 
   TimeReceived = TimeReceived + time_save
