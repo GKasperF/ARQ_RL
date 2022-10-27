@@ -20,8 +20,8 @@ def Test(env, Q, Nit, batch=1):
   time_instant = torch.zeros(batch).to(device)
   number_successes = torch.zeros(batch).to(device)
 
-  reward_save = torch.empty((0, 4)).to(device)
-  for i in range(int(Nit/batch)):
+  time_save = torch.empty((0, 1)).to(device)
+  for i in range(Nit):
       done = 0
       reward_acc[:] = 0
       transmissions[:] = 0
@@ -52,15 +52,26 @@ def Test(env, Q, Nit, batch=1):
           break
         if done:
           break
-      temp = torch.cat( (reward_acc.reshape(batch, 1), transmissions.reshape(batch, 1), time_instant.reshape(batch, 1), number_successes.reshape(batch, 1)), dim = 1)
-      reward_save = torch.cat( (reward_save, copy.deepcopy(temp)), dim = 0)
-  average_reward = torch.mean(reward_save[:, 0])
-  average_transmissions = torch.mean(reward_save[:, 1])
-  average_recovery = torch.mean(reward_save[:, 2]) - env.Tf
+      time_save = torch.cat((time_save, copy.deepcopy(time_instant.reshape(batch, 1))))
 
-  print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
+  TimeReceived = torch.arange(start=0, end=Nit)
+  time_save = time_save.reshape(TimeReceived.shape)
+
+  TimeReceived = TimeReceived + time_save
+  for i in range(Nit-1):
+    TimeReceived[i+1] = torch.maximum(TimeReceived[i], TimeReceived[i+1])
+
+  AvgInOrder = torch.mean(TimeReceived) - env.Tf
+
+
+
+  # average_reward = torch.mean(reward_save[:, 0])
+  # average_transmissions = torch.mean(reward_save[:, 1])
+  # average_recovery = torch.mean(reward_save[:, 2]) - env.Tf
+
+  #print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
   
-  return(average_reward, average_transmissions, average_recovery)
+  return(AvgInOrder)
 
 
 
@@ -71,7 +82,7 @@ with open('Data/Iid_Sequence_Example_Tests.pickle', 'rb') as f:
 
 
 batch = 1
-Channel = Envs.iidchannel(0.1, batch).to(device)
+#Channel = Envs.iidchannel(0.1, batch).to(device)
 #Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batch).to(device)
 TransEnv = Envs.EnvFeedbackRNN_ReadFromFile_MultiPackets(10, 0.6, 5, Channel_Erasures, ChannelModel_Sequence, batch)
 TransEnv = TransEnv.to(device)
@@ -84,7 +95,8 @@ class CPU_Unpickler(pickle.Unpickler):
       else: return super().find_class(module, name)
 
 
-all_results = []
+all_results_dict = {}
+all_results_list = []
 
 path = 'Data/ModelCNN_Iid_Example_RNN*.pickle'
 for filename in glob.glob(path):
@@ -93,11 +105,22 @@ for filename in glob.glob(path):
   Q = Q.to(device)
   t0 = time()
   print(filename)
-  results = Test(TransEnv, Q, 100000, batch)
+  AvgInOrder = Test(TransEnv, Q, 100000, batch)
   t1 = time()
 
   print('Testing takes {} seconds'.format(t1-t0))
-  all_results.append(results)
+  all_results_dict[filename] = AvgInOrder
+  all_results_list.append(AvgInOrder)
+  try:
+    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+      pickle.dump(all_results_dict, f)
+  except Exception as e:
+    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+      pickle.dump(all_results_list, f)
 
-with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
-  pickle.dump(all_results, f)
+try:
+  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    pickle.dump(all_results_dict, f)
+except Exception as e:
+  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    pickle.dump(all_results_list, f)
