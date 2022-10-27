@@ -106,12 +106,12 @@ for filename in glob.glob(path):
   Q = Q.to(device)
   t0 = time()
   print(filename)
-  AvgInOrder = Test(TransEnv, Q, 100000, batch)
+  Results = Test(TransEnv, Q, 100000, batch)
   t1 = time()
 
   print('Testing takes {} seconds'.format(t1-t0))
-  all_results_dict[filename] = AvgInOrder
-  all_results_list.append(AvgInOrder)
+  all_results_dict[filename] = Results
+  all_results_list.append(Results)
   try:
     with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example_NotInOrder.pickle', 'wb') as f:
       pickle.dump(all_results_dict, f)
