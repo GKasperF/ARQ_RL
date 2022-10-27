@@ -393,3 +393,117 @@ class EnvFeedbackRNN_GE(gym.Env):
         self.c = self.c.to(device)
         self.ChannelModel = self.ChannelModel.to(device)
         return(self)
+
+class EnvFeedbackRNN_ReadFromFile_MultiPackets(gym.Env):
+    def __init__(self, Tf, alpha, beta, channel_erasures, ChannelModel_sequence, batch = 1):
+        self.Tf = torch.tensor([Tf])
+        self.alpha = torch.tensor([alpha])
+        self.beta = torch.tensor([beta])
+        self.channel_erasures = channel_erasures
+        self.index = 0
+        #action space
+        self.actions = torch.tensor([1, 0])
+        self.action_space = spaces.Discrete(2)
+        self.batch = batch
+        self.device = 'cpu'
+
+        #observation space
+        self.observation_space = spaces.MultiBinary(2*Tf)
+        
+        self.ChannelModel_Sequence = ChannelModel_sequence
+
+        self.start_state = torch.zeros((batch, 2*Tf))
+        self.start_state[:, Tf:2*Tf] = 0.5
+        self.agent_state = copy.deepcopy(self.start_state)
+        self.finish_state = 2*torch.ones((batch, 2*Tf))
+        #Probability array
+        self.array = {}
+        
+    def step(self, action):
+        success = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        reward = (torch.logical_not(success)) * (-action.reshape(len(action)) - self.alpha)
+
+        self.agent_state[:, 0] = action.reshape((len(action),))
+
+        temp = self.agent_state[:, self.Tf - 1].type(torch.int64).reshape(self.batch) == 1
+        temp2 = self.channel_erasures[:, self.index].type(torch.int64)
+
+        new_success = (temp2 & temp)
+        success = new_success | success
+        reward[new_success == 1] = reward[new_success == 1] + self.beta
+        self.agent_state[success == 1] = copy.deepcopy(self.finish_state[success == 1])
+        self.agent_state = torch.roll(self.agent_state, 1, 1)
+        self.agent_state[ success == 0, 0] = 0
+
+        estimate = self.ChannelModel_Sequence[self.index, :, :]
+
+        estimate = estimate.reshape(self.batch, self.Tf)
+        self.agent_state[success == 0, self.Tf:] = estimate[success == 0, :]
+
+        self.index = self.index + 1
+
+        done = torch.all(success.type(torch.uint8))
+        return(self.agent_state, reward, done, success)
+    def reset(self):
+        self.agent_state = copy.deepcopy(self.start_state)
+        return(self.agent_state)
+    def reset_success(self):
+        success_indices = torch.all(torch.eq(self.agent_state, self.finish_state), dim = 1)
+        self.agent_state[success_indices] = copy.deepcopy(self.start_state[success_indices])
+        return(self.agent_state)
+    def finish(self):
+        self.agent_state = copy.deepcopy(self.finish_state)
+        return(self.agent_state)
+    def to(self, device):
+        self.start_state = self.start_state.to(device)
+        self.agent_state = self.agent_state.to(device)
+        self.finish_state = self.finish_state.to(device)
+        self.Tf = self.Tf.to(device)
+        self.alpha = self.alpha.to(device)
+        self.beta = self.beta.to(device)
+        self.actions = self.actions.to(device)
+        self.device = device
+        self.ChannelModel_Sequence = self.ChannelModel_Sequence.to(device)
+        self.channel_erasures = self.channel_erasures.to(device)
+        return(self)
+
+class GenerateStatesFromErasures(gym.Env):
+    def __init__(self, channel_erasures, ChannelModel, Tf, batch = 1):
+        self.channel_erasures = channel_erasures
+        self.Tf = Tf
+        self.index = 0
+        #action space
+        self.batch = batch
+        self.device = 'cpu'
+        
+        self.h = torch.zeros((ChannelModel.num_layers, batch, ChannelModel.hidden_size))
+        self.c = torch.zeros((ChannelModel.num_layers, batch, ChannelModel.hidden_size))
+        self.ChannelModel = ChannelModel
+        
+    def step(self):
+        temp = self.channel_erasures[:, self.index].type(torch.float).reshape(self.batch, 1)
+        temp2 = torch.ones(temp.shape).type(torch.float).to(self.device)
+
+        state_in = torch.cat((temp, temp2), dim=1).reshape(self.batch, 1, 2)
+
+        h_in = self.h
+        c_in = self.c
+
+        estimate, (h_out, c_out) = self.ChannelModel(state_in, h_in, c_in)
+
+        self.h = h_out
+        self.c = c_out
+        estimate = estimate.reshape(self.batch, self.Tf)
+        
+        self.index = self.index + 1
+
+        return(estimate)
+    
+    def to(self, device):
+        self.Tf = self.Tf.to(device)
+        self.device = device
+        self.channel_erasures = self.channel_erasures.to(device)
+        self.h = self.h.to(device)
+        self.c = self.c.to(device)
+        self.ChannelModel = self.ChannelModel.to(device)
+        return(self)
