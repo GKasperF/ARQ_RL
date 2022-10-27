@@ -4,6 +4,7 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --mem=64000M
 #SBATCH --job-name RL_TrainAndTest
+#SBATCH --mail-user=gustavo.kasperfacenda@mail.utoronto.ca
 #SBATCH --mail-type=FAIL,BEGIN,END
 #SBATCH --time=6-23:00:00
 #SBATCH --account=rrg-khisti
