@@ -426,7 +426,7 @@ class EnvFeedbackRNN_ReadFromFile_MultiPackets(gym.Env):
         self.agent_state[:, 0] = action.reshape((len(action),))
 
         temp = self.agent_state[:, self.Tf - 1].type(torch.int64).reshape(self.batch) == 1
-        temp2 = self.channel_erasures[self.index]
+        temp2 = self.channel_erasures[:, self.index].type(torch.int64)
 
         new_success = (temp2 & temp)
         success = new_success | success
@@ -435,7 +435,7 @@ class EnvFeedbackRNN_ReadFromFile_MultiPackets(gym.Env):
         self.agent_state = torch.roll(self.agent_state, 1, 1)
         self.agent_state[ success == 0, 0] = 0
 
-        estimate = self.ChannelModel_Sequence[self.index, :]
+        estimate = self.ChannelModel_Sequence[self.index, :, :]
 
         estimate = estimate.reshape(self.batch, self.Tf)
         self.agent_state[success == 0, self.Tf:] = estimate[success == 0, :]
@@ -463,9 +463,8 @@ class EnvFeedbackRNN_ReadFromFile_MultiPackets(gym.Env):
         self.beta = self.beta.to(device)
         self.actions = self.actions.to(device)
         self.device = device
-        self.h = self.h.to(device)
-        self.c = self.c.to(device)
-        self.ChannelModel = self.ChannelModel.to(device)
+        self.ChannelModel_Sequence = self.ChannelModel_Sequence.to(device)
+        self.channel_erasures = self.channel_erasures.to(device)
         return(self)
 
 class GenerateStatesFromErasures(gym.Env):

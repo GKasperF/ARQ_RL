@@ -27,8 +27,14 @@ def Test(env, Q, Nit, batch=1):
       transmissions[:] = 0
       time_instant[:] = 1
       number_successes[:] = 0
-      state = env.reset()
       SuccessF = torch.zeros(batch).to(device)
+      if i == 0:
+        state = env.reset()
+      else:
+        state = env.reset()
+        estimate = env.ChannelModel_Sequence[i-1, :, :]
+        state[SuccessF == 0, env.Tf:] = estimate[SuccessF == 0, :]
+      env.index = i
       while 1:
         action_index = torch.argmax(Q(state), dim = 1)
         # take action and get reward, transit to next state
@@ -57,9 +63,17 @@ def Test(env, Q, Nit, batch=1):
   return(average_reward, average_transmissions, average_recovery)
 
 
-batch = 1000
-Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batch).to(device)
-TransEnv = Envs.EnvFeedbackGeneral(10, 0.6, 5, Channel, batch, M = 1)
+
+with open('Data/Iid_StateSequence_Tests.pickle', 'rb') as f:
+  ChannelModel_Sequence = torch.load(f)
+with open('Data/Iid_Sequence_Example_Tests.pickle', 'rb') as f:
+  Channel_Erasures = torch.load(f)
+
+
+batch = 1
+Channel = Envs.iidchannel(0.1, batch).to(device)
+#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batch).to(device)
+TransEnv = Envs.EnvFeedbackRNN_ReadFromFile_MultiPackets(10, 0.6, 5, Channel_Erasures, ChannelModel_Sequence, batch)
 TransEnv = TransEnv.to(device)
 
 
@@ -72,7 +86,7 @@ class CPU_Unpickler(pickle.Unpickler):
 
 all_results = []
 
-path = 'Data/ModelCNNFromDataset_Memory*.pickle'
+path = 'Data/ModelCNN_Iid_Example_RNN*.pickle'
 for filename in glob.glob(path):
   with open(filename, 'rb') as f:
     Q = CPU_Unpickler(f).load()
@@ -85,5 +99,5 @@ for filename in glob.glob(path):
   print('Testing takes {} seconds'.format(t1-t0))
   all_results.append(results)
 
-with open('Data/AgentCNNRLresultsTestBatch_FromDataset_Memory1.pickle', 'wb') as f:
+with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
   pickle.dump(all_results, f)
