@@ -75,9 +75,9 @@ def Test(env, Q, Nit, batch=1):
 
 
 
-with open('Data/Iid_StateSequence_Tests.pickle', 'rb') as f:
+with open('Data/GE_Isolated_StateSequence_Tests.pickle', 'rb') as f:
   ChannelModel_Sequence = torch.load(f)
-with open('Data/Iid_Sequence_Example_Tests.pickle', 'rb') as f:
+with open('Data/GE_Isolated_Sequence_Example_Tests.pickle', 'rb') as f:
   Channel_Erasures = torch.load(f)
 
 
@@ -95,14 +95,15 @@ class CPU_Unpickler(pickle.Unpickler):
       else: return super().find_class(module, name)
 
 
+all_results_list = []
+
 try:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'rb') as f:
+  with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'rb') as f:
     all_results_dict = pickle.load(f)
 except Exception as e:
   all_results_dict = {}
-all_results_list = []
 
-path = 'Data/ModelCNN_Iid_Example_RNN*.pickle'
+path = 'Data/ModelCNN_GE_Isolated_Example_RNN*.pickle'
 for filename in glob.glob(path):
   if filename in all_results_dict:
     continue
@@ -118,15 +119,15 @@ for filename in glob.glob(path):
   all_results_dict[filename] = AvgInOrder
   all_results_list.append(AvgInOrder)
   try:
-    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'wb') as f:
       pickle.dump(all_results_dict, f)
   except Exception as e:
-    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'wb') as f:
       pickle.dump(all_results_list, f)
 
 try:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+  with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'wb') as f:
     pickle.dump(all_results_dict, f)
 except Exception as e:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+  with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'wb') as f:
     pickle.dump(all_results_list, f)

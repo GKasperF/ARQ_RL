@@ -21,6 +21,7 @@ def Test(env, Q, Nit, batch=1):
   number_successes = torch.zeros(batch).to(device)
 
   time_save = torch.empty((0, 1)).to(device)
+  transmissions_save = torch.empty((0, 1)).to(device)
   for i in range(Nit):
       done = 0
       reward_acc[:] = 0
@@ -53,15 +54,15 @@ def Test(env, Q, Nit, batch=1):
         if done:
           break
       time_save = torch.cat((time_save, copy.deepcopy(time_instant.reshape(batch, 1))))
+      transmissions_save = torch.cat((transmissions_save, copy.deepcopy(transmissions).reshape(batch, 1)))
 
   TimeReceived = torch.arange(start=0, end=Nit).to(device)
   time_save = time_save.reshape(TimeReceived.shape)
 
   TimeReceived = TimeReceived + time_save
-  for i in range(Nit-1):
-    TimeReceived[i+1] = torch.maximum(TimeReceived[i], TimeReceived[i+1])
 
-  AvgInOrder = torch.mean(TimeReceived) - env.Tf
+  AvgDelay = torch.mean(TimeReceived) - env.Tf
+  AvgTransmissions = torch.mean(transmissions_save)
 
 
 
@@ -71,13 +72,13 @@ def Test(env, Q, Nit, batch=1):
 
   #print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
   
-  return(AvgInOrder)
+  return(AvgDelay, AvgTransmissions)
 
 
 
-with open('Data/Iid_StateSequence_Tests.pickle', 'rb') as f:
+with open('Data/Fritchman_StateSequence_Tests.pickle', 'rb') as f:
   ChannelModel_Sequence = torch.load(f)
-with open('Data/Iid_Sequence_Example_Tests.pickle', 'rb') as f:
+with open('Data/Fritchman_Sequence_Example_Tests.pickle', 'rb') as f:
   Channel_Erasures = torch.load(f)
 
 
@@ -95,38 +96,32 @@ class CPU_Unpickler(pickle.Unpickler):
       else: return super().find_class(module, name)
 
 
-try:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'rb') as f:
-    all_results_dict = pickle.load(f)
-except Exception as e:
-  all_results_dict = {}
+all_results_dict = {}
 all_results_list = []
 
-path = 'Data/ModelCNN_Iid_Example_RNN*.pickle'
+path = 'Data/ModelCNN_Fritchman_Example_RNN*.pickle'
 for filename in glob.glob(path):
-  if filename in all_results_dict:
-    continue
   with open(filename, 'rb') as f:
     Q = CPU_Unpickler(f).load()
   Q = Q.to(device)
   t0 = time()
   print(filename)
-  AvgInOrder = Test(TransEnv, Q, 100000, batch)
+  Results = Test(TransEnv, Q, 100000, batch)
   t1 = time()
 
   print('Testing takes {} seconds'.format(t1-t0))
-  all_results_dict[filename] = AvgInOrder
-  all_results_list.append(AvgInOrder)
+  all_results_dict[filename] = Results
+  all_results_list.append(Results)
   try:
-    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example_NotInOrder.pickle', 'wb') as f:
       pickle.dump(all_results_dict, f)
   except Exception as e:
-    with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+    with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example_NotInOrder.pickle', 'wb') as f:
       pickle.dump(all_results_list, f)
 
 try:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+  with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example_NotInOrder.pickle', 'wb') as f:
     pickle.dump(all_results_dict, f)
 except Exception as e:
-  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example.pickle', 'wb') as f:
+  with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example_NotInOrder.pickle', 'wb') as f:
     pickle.dump(all_results_list, f)
