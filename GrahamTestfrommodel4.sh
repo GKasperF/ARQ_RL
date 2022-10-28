@@ -11,4 +11,4 @@
 
 module load python/3.8.10
 source RLVirtualEnv/bin/activate
-python3 ./TestFromModels_InOrder4.py
+python3 ./TestFromModels_Multi4.py

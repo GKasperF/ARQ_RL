@@ -95,11 +95,18 @@ class CPU_Unpickler(pickle.Unpickler):
       else: return super().find_class(module, name)
 
 
-all_results_dict = {}
 all_results_list = []
+
+try:
+  with open('Data/AgentCNNRLResults_MultiPacket_GE_Isolated_Example.pickle', 'rb') as f:
+    all_results_dict = pickle.load(f)
+except Exception as e:
+  all_results_dict = {}
 
 path = 'Data/ModelCNN_GE_Isolated_Example_RNN*.pickle'
 for filename in glob.glob(path):
+  if filename in all_results_dict:
+    continue
   with open(filename, 'rb') as f:
     Q = CPU_Unpickler(f).load()
   Q = Q.to(device)
