@@ -96,7 +96,11 @@ class CPU_Unpickler(pickle.Unpickler):
       else: return super().find_class(module, name)
 
 
-all_results_dict = {}
+try:
+  with open('Data/AgentCNNRLResults_MultiPacket_Iid_Example_NotInOrder.pickle', 'rb') as f:
+    all_results_dict = pickle.load(f)
+except Exception as e:
+  all_results_dict = {}
 all_results_list = []
 
 path = 'Data/ModelCNN_Iid_Example_RNN*.pickle'
