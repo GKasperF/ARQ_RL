@@ -60,7 +60,7 @@ def Test(env, Q, Nit, batch=1):
   TimeReceived = TimeReceived + time_save
   for i in range(Nit-1):
     TimeReceived[i+1] = torch.maximum(TimeReceived[i], TimeReceived[i+1])
-
+  TimeReceived = TimeReceived - torch.arange(start=0, end = Nit).to(device)
   AvgInOrder = torch.mean(TimeReceived) - env.Tf
 
 
