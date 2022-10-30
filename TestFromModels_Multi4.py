@@ -105,6 +105,8 @@ all_results_list = []
 
 path = 'Data/ModelCNN_Fritchman_Example_RNN*.pickle'
 for filename in glob.glob(path):
+  if filename in all_results_dict:
+    continue
   with open(filename, 'rb') as f:
     Q = CPU_Unpickler(f).load()
   Q = Q.to(device)
