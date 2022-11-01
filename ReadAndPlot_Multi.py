@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import torch
 from LowerBound.BruteForceUtilityFunctions import lower_convex_hull
 
 store_results = []
@@ -21,10 +22,25 @@ with open('Data/AgentCNNRLResults_MultiPacket_Fritchman_Example.pickle', 'rb') a
 
 pass 
 
-# import matplotlib.pyplot as plt
-# plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions2, average_recovery2, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
-# plt.legend(('Proposed Scheme', 'Q-learning with Lookup Table', 'Multi-burst Transmission', 'Lower Bound'))
-# plt.xlabel('Average Number of Transmissions')
-# plt.ylabel('Average Recovery Time')
-# plt.grid()
-# plt.show()
+temp = torch.arange(start=0, end=100000).type(torch.float)
+avg_cancel = torch.mean(temp)
+
+InOrderDelay = torch.zeros(len(InOrderDict))
+Delay = torch.zeros(len(NotInOrderDict))
+Transmissions = torch.zeros(len(NotInOrderDict))
+
+i = 0
+for key in NotInOrderDict:
+    InOrderDelay[i] = InOrderDict[key].cpu() - avg_cancel 
+    Delay[i] = NotInOrderDict[key][0].cpu() - avg_cancel
+    Transmissions[i] = NotInOrderDict[key][1].cpu()
+    i = i + 1
+
+
+import matplotlib.pyplot as plt
+plt.plot(Transmissions, Delay, 'xk', Transmissions, InOrderDelay, 'xb')
+plt.legend(('Delay', 'In-order Delay'))
+plt.xlabel('Average Number of Transmissions')
+plt.ylabel('Average Delay')
+plt.grid()
+plt.show()
