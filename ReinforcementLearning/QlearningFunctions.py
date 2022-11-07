@@ -424,7 +424,7 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
 
         
     if len(states) > 0:    
-        Next_States_QValues = Qtarget(next_states)
+        Next_States_QValues, (_, _) = Qtarget(next_states, h_out_list, c_out_list)
         finish_state = env.finish_state[0]
         finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
         finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
@@ -432,7 +432,7 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
 
         BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
         td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
-        Qestimates = Qfunction(states)
+        Qestimates, (_, _) = Qfunction(states, h_in_list, c_in_list)
         td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
         loss = criterion(td_estimate, td_target.detach())
         optimizer.zero_grad()
