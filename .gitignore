@@ -1,19 +1,9 @@
 
-TrainingDebug.py
 *.pyc
-TestArchive.py
-SeeDebug.py
-SeePolicy.py
-TestDebug.py
-
-DebugScript.py
-ReadAndResave.py
-TestEnvironment.py
 *.prof
 *.pickle
 *.txt
 !requirements.txt
-ComparePolicies.py
 .vscode/launch.json
 *.rar
 *.torch
@@ -21,12 +11,8 @@ read_packets.py
 packet_sender.py
 packet_receiver.py
 interpret_packets.py
-generate_packet_erasure_trace.py
 Data/packets_received.dill
 Data/packets_transmitted.dill
 Data/TraceUFSC.pth
 Data/Delays.pth
 *.bin
-ConvertTraceToErasureSequence.py
-DebugMath.py
-DebugScript2.py
