@@ -411,10 +411,10 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
             next_states = next_states[0:0]
             rewards = rewards[0:0]
             actions = actions[0:0]
-            h_in_list = h_in_list[0:0]
-            c_in_list = c_in_list[0:0]
-            h_out_list = h_out_list[0:0]
-            c_out_list = c_out_list[0:0]
+            h_in_list = h_in_list[:, 0:0, :]
+            c_in_list = c_in_list[:, 0:0, :]
+            h_out_list = h_out_list[:, 0:0, :]
+            c_out_list = c_out_list[:, 0:0, :]
 
             num_successes = 0
 
