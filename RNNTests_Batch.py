@@ -5,8 +5,6 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from GenerateErasureSequence import Channel
-
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ChannelModel(torch.nn.Module):
