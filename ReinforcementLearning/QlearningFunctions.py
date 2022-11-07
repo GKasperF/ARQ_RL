@@ -67,6 +67,49 @@ class QApproxFunction(torch.nn.Module):
     
     return output
 
+class QApproxFunction_LSTM(torch.nn.Module):
+  def __init__(self, state_dim: 'Number of state variables', action_dim: 'Number of possible actions', hidden_layer: 'Size of the hidden layers'):
+    super(QApproxFunction_LSTM, self).__init__()
+
+    self.state_dim = state_dim
+    self.action_dim = action_dim
+    self.hidden_layer = hidden_layer
+    self.hidden_size_LSTM = 50
+
+    self.Layer0 = torch.nn.LSTM(state_dim, hidden_size = self.hidden_size_LSTM, num_layers = 5, batch_first = True)
+    
+    self.Layer1 = torch.nn.Linear(self.hidden_size_LSTM, 1000*state_dim)
+    self.Layer2 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer3 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer4 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+    self.Layer5 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
+
+    self.Layer6 = torch.nn.Conv1d(hidden_layer, 1, 1)
+    
+    self.FinalLayer = torch.nn.Linear(state_dim, action_dim)
+
+  def forward(self, x, h, c):
+    x = x.reshape(-1, 1, self.state_dim)
+    L0, (h_out, c_out) = self.Layer0(x, (h, c))
+    L0 = L0.view(-1, self.hidden_size_LSTM)
+    L1 = self.Layer1(L0)
+    L1_reshaped = L1.view(-1, self.hidden_layer, self.state_dim)
+    ReLU1 = F.relu(L1_reshaped)
+    L2 = self.Layer2(ReLU1)
+    ReLU2 = F.relu(L2)
+    L3 = self.Layer3(ReLU2)
+    ReLU3 = F.relu(L3)
+    L4 = self.Layer4(ReLU3)
+    ReLU4 = F.relu(L4)
+    L5 = self.Layer5(ReLU4)
+    ReLU5 = F.relu(L5)
+    L6 = self.Layer6(ReLU5)
+
+    
+    output = self.FinalLayer(L6.view(-1, self.state_dim))
+    
+    return (output, (h_out, c_out))
+
 def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
                             epsilon = 0.1, UpdateEpisodes = 10, UpdateTargetEpisodes = 100, lr = 0.001):
     device = env.device
@@ -275,3 +318,128 @@ def GradientQLearningDebug(env, num_episodes, Qfunction , discount_factor = 1.0,
     Debug = [Debug1, Debug2]
        
     return Qfunction, policy, Debug
+
+
+def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
+                            epsilon = 0.1, UpdateEpisodes = 10, UpdateTargetEpisodes = 100, lr = 0.001):
+    
+    device = env.device
+    
+    criterion = torch.nn.MSELoss(reduction='mean')
+    optimizer = torch.optim.Adam(list(Qfunction.parameters()), lr = lr)
+
+    states = torch.tensor([]).to(device)
+    next_states = torch.tensor([]).to(device)
+    rewards = torch.tensor([]).to(device)
+    action_index = torch.tensor([]).to(device)
+    actions = torch.tensor([]).to(device)
+    h_in_list = torch.tensor([]).to(device)
+    c_in_list = torch.tensor([]).to(device)
+    h_out_list = torch.tensor([]).to(device)
+    c_out_list = torch.tensor([]).to(device)
+
+    Probability_Basis = epsilon/env.action_space.n * torch.ones((env.batch, 1)).to(device)
+    Sum_Probability = (1.0 - epsilon)*torch.ones((env.batch), 1).to(device).squeeze()
+    Zeros_Tensor = torch.zeros((env.batch, 1)).to(device).squeeze()
+    num_finished_episodes = 0
+    state = env.reset()
+    Qtarget = copy.deepcopy(Qfunction)
+    num_successes = torch.zeros(1).to(device)
+    count0 = 0
+    rewards_acc = torch.zeros((env.batch, 1)).to(device)
+
+    h_in = torch.zeros((5, env.batch, 50)).to(device)
+    c_in = torch.zeros((5, env.batch, 50)).to(device)
+    # For every episode
+    while num_finished_episodes < num_episodes:
+        # get probabilities of all actions from current state
+
+        Q_values, (h_out, c_out) = Qfunction(state, h_in, c_in)
+
+        best_action = torch.argmax(Q_values, dim = 1)
+        action_probabilities = Probability_Basis + torch.where(best_action == 1, Sum_Probability, Zeros_Tensor).reshape(Probability_Basis.shape)
+        action_index = torch.bernoulli(action_probabilities[:, 0]) 
+        actions = torch.cat((actions, action_index), dim = 0)
+        
+        temp_state = copy.copy(state)
+        states = torch.cat((states, copy.deepcopy(temp_state)), dim = 0)
+        temp_h_in = copy.copy(h_in)
+        temp_c_in = copy.copy(c_in)
+        h_in_list = torch.cat((h_in_list, copy.deepcopy(temp_h_in)), dim = 1)
+        c_in_list = torch.cat((c_in_list, copy.deepcopy(temp_c_in)), dim = 1)
+
+        # take action and get reward, transit to next state
+        state, reward, done, SuccessF = env.step(action_index)
+        next_state = copy.copy(state)
+        next_states = torch.cat((next_states, copy.deepcopy(next_state)), dim = 0)
+        rewards = torch.cat((rewards, reward))
+
+        temp_h_out = copy.copy(h_out)
+        temp_c_out = copy.copy(c_out)
+        h_out_list = torch.cat((h_out_list, copy.deepcopy(temp_h_out)), dim = 1)
+        c_out_list = torch.cat((c_out_list, copy.deepcopy(temp_c_out)), dim = 1)
+        
+        rewards_acc += reward.reshape(rewards_acc.shape)
+        if torch.sum(SuccessF) > 0:
+            rewards_acc[SuccessF==1] = 0
+
+        num_successes += torch.sum(SuccessF)
+        count0 += torch.sum(SuccessF)
+        num_finished_episodes += torch.sum(SuccessF)
+
+        state = env.reset_success()
+
+        if num_successes > UpdateEpisodes:
+            Next_States_QValues, (_, _) = Qtarget(next_states, h_out_list, c_out_list)
+            finish_state = env.finish_state[0]
+            finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
+            finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
+            Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device), Next_States_QValues)
+
+            BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
+            td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
+            td_target = td_target.detach()
+            for i in range(num_successes.type(torch.int64)):
+                Qestimates, (_, _) = Qfunction(states, h_in_list, c_in_list)
+                td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
+                loss = criterion(td_estimate, td_target)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            states = states[0:0]
+            next_states = next_states[0:0]
+            rewards = rewards[0:0]
+            actions = actions[0:0]
+            h_in_list = h_in_list[0:0]
+            c_in_list = c_in_list[0:0]
+            h_out_list = h_out_list[0:0]
+            c_out_list = c_out_list[0:0]
+
+            num_successes = 0
+
+        if count0 > UpdateTargetEpisodes:
+            Qtarget = copy.deepcopy(Qfunction)
+            count0 = 0
+
+        
+    if len(states) > 0:    
+        Next_States_QValues = Qtarget(next_states)
+        finish_state = env.finish_state[0]
+        finish_states_indices = torch.all(torch.eq(next_states, finish_state), dim = 1)
+        finish_states_indices = finish_states_indices.reshape( len(finish_states_indices), 1).repeat(1,env.action_space.n)
+        Next_States_QValues = torch.where(finish_states_indices, torch.zeros(Next_States_QValues.size()).to(device), Next_States_QValues)
+
+        BestTargetValues, _ = torch.max(Next_States_QValues, dim = 1, keepdim = True)
+        td_target = rewards.reshape((len(rewards), 1)) + discount_factor*BestTargetValues
+        Qestimates = Qfunction(states)
+        td_estimate = Qestimates[torch.arange(len(states)), actions.type(torch.int64)].reshape( (len(states), 1))
+        loss = criterion(td_estimate, td_target.detach())
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    
+    policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
+       
+    return Qfunction, policy
