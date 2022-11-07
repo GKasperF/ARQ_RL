@@ -441,5 +441,5 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
 
     
     policy = createEpsilonGreedyPolicyGradient(Qfunction, 0, env.action_space.n)
-       
-    return Qfunction, policy
+    Debug = 0
+    return Qfunction, policy, Debug
