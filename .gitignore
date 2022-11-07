@@ -5,7 +5,6 @@ TestArchive.py
 SeeDebug.py
 SeePolicy.py
 TestDebug.py
-PrintOptimalPolicies.py
 
 DebugScript.py
 ReadAndResave.py
