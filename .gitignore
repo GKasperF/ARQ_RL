@@ -31,3 +31,4 @@ Data/Delays.pth
 ConvertTraceToErasureSequence.py
 DebugMath.py
 DebugScript2.py
+*.pdf
