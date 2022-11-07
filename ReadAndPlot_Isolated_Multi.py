@@ -68,10 +68,29 @@ average_recovery_heur = [test[t][1] for t in range(len(test))]
 average_recovery_heur = [x for _, x in sorted(zip(average_transmissions_heur, average_recovery_heur))]
 average_transmissions_heur.sort()
 
+with open('Data/RatelessResults_GE_Isolated_Example.pickle', 'rb') as f:
+    store_results_rateless = pickle.load(f)
+
+average_transmissions_rateless = [store_results_rateless[t][0] for t in range(len(store_results_rateless))]
+average_recovery_rateless = [store_results_rateless[t][1] for t in range(len(store_results_rateless))]
+
+
 import matplotlib.pyplot as plt
-plt.plot(Transmissions, Delay, 'xk', Transmissions, InOrderDelay, '+k', average_transmissions_heur, average_recovery_heur, '-g', average_transmissions_heur_inorder, average_recovery_heur_inorder, '--g')
-plt.legend(('Delay', 'In-Order Delay', 'Heuristic Recovery Delay', 'Heuristic In-Order Delay'))
+plt.plot(Transmissions, InOrderDelay, '+k',  average_transmissions_heur_inorder, average_recovery_heur_inorder, average_transmissions_rateless, average_recovery_rateless, '-b')
+plt.legend(('Proposed', 'Multi-Burst Transmission', 'Rateless Code'))
 plt.xlabel('Average Number of Transmissions')
-plt.ylabel('Average Delay')
+plt.ylabel('Average In-Order Delay')
+plt.ylim((0, 25))
+plt.xlim(right=6)
 plt.grid()
+plt.savefig('InOrderDelay_GE_Isolated_Example.pdf')
 plt.show()
+
+# plt.plot(Transmissions, Delay, 'xk', Transmissions, InOrderDelay, '+k', average_transmissions_heur, average_recovery_heur, '-g', average_transmissions_heur_inorder, average_recovery_heur_inorder, average_transmissions_rateless, average_recovery_rateless, '-b')
+# plt.legend(('Delay', 'In-Order Delay', 'Heuristic Recovery Delay', 'Heuristic In-Order Delay', 'Rateless Code Delay'))
+# plt.xlabel('Average Number of Transmissions')
+# plt.ylabel('Average Delay')
+# plt.ylim((0, 25))
+# plt.xlim(right=6)
+# plt.grid()
+# plt.show()

@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 
+CUDA_LAUNCH_BLOCKING=1
+
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ChannelModel(torch.nn.Module):
@@ -47,7 +49,7 @@ num_layers = 5
 batch_size = 1000
 Tf = 10
 
-num_inputs = 5
+num_inputs = 20
 
 RNN_Model = ChannelModel(num_inputs = num_inputs, hidden_size = hidden_size, output_size = Tf).to(device)
 
@@ -77,16 +79,30 @@ for i in range(Num_Samples - Tf - num_inputs):
     state_in = torch.cat( ((Channel_Sequence_All[:, i:i+num_inputs].type(torch.uint8) & transmission).type(torch.float).reshape((batch_size, num_inputs, 1)), transmission.type(torch.float).reshape((batch_size, num_inputs, 1))), dim=2)
     #estimate, (h_out, c_out) = RNN_Model(state_in, h_in, c_in)
     estimate = RNN_Model(state_in)
-    loss = criterion(estimate, target.detach().reshape(estimate.shape))
-    loss.backward()
-    save_loss[i] = loss.detach().to('cpu').numpy()
+    loss = criterion(estimate, target.reshape(estimate.shape).detach())
+
+    try:
+      save_loss[i] = loss
+      #loss_copy = copy.copy(loss).detach().to('cpu').numpy()
+      #save_loss[i] = loss_copy
+    except Exception as e:
+      print(e)
+      pass
+    optimizer.zero_grad()
+    try:
+      loss.backward()
+    except Exception as e:
+      print(e)
+      pass
+      
+    optimizer.step()
 
     if (update_count % UpdateSteps == 0):
-        optimizer.step()
-        optimizer.zero_grad()
         j+=1
         print(update_count, j)
     update_count = update_count + 1
+
+#save_loss = save_loss.detach().cpu().numpy()
 
 with open('Data/Fritchman_Loss_CNN_Example.pickle', 'wb') as f:
   torch.save(save_loss, f)
@@ -102,51 +118,51 @@ plt.xlabel('Step')
 plt.ylabel('BCE Loss')
 plt.show()
 
-RNN_Model.Layer1.proj_size = 0
-RNN_Model = RNN_Model.to(device)
+# RNN_Model.Layer1.proj_size = 0
+# RNN_Model = RNN_Model.to(device)
 
-batch_size = 1
+# batch_size = 1
 
-state_in0 = torch.tensor([0.0, 0.0]).to(device).reshape((batch_size, 1, 2))
-state_in1 = torch.tensor([1.0, 1.0]).to(device).reshape((batch_size, 1, 2))
-state_in2 = torch.tensor([0.0, 1.0]).to(device).reshape((batch_size, 1, 2))
+# state_in0 = torch.tensor([0.0, 0.0]).to(device).reshape((batch_size, 1, 2))
+# state_in1 = torch.tensor([1.0, 1.0]).to(device).reshape((batch_size, 1, 2))
+# state_in2 = torch.tensor([0.0, 1.0]).to(device).reshape((batch_size, 1, 2))
 
-state_in = torch.cat((state_in1, state_in1, state_in1, state_in1, state_in1), dim=1)
+# state_in = torch.cat((state_in1, state_in1, state_in1, state_in1, state_in1), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in2, state_in0, state_in0, state_in0, state_in0), dim=1)
+# state_in = torch.cat((state_in2, state_in0, state_in0, state_in0, state_in0), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in0, state_in0, state_in0, state_in0, state_in2), dim=1)
+# state_in = torch.cat((state_in0, state_in0, state_in0, state_in0, state_in2), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in0, state_in0, state_in0, state_in1, state_in2), dim=1)
+# state_in = torch.cat((state_in0, state_in0, state_in0, state_in1, state_in2), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in0, state_in0, state_in0, state_in2, state_in1), dim=1)
+# state_in = torch.cat((state_in0, state_in0, state_in0, state_in2, state_in1), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in0, state_in0, state_in0, state_in0, state_in0), dim=1)
+# state_in = torch.cat((state_in0, state_in0, state_in0, state_in0, state_in0), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in1, state_in0, state_in0, state_in0, state_in0), dim=1)
+# state_in = torch.cat((state_in1, state_in0, state_in0, state_in0, state_in0), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
 
-state_in = torch.cat((state_in1, state_in1, state_in1, state_in1, state_in2), dim=1)
+# state_in = torch.cat((state_in1, state_in1, state_in1, state_in1, state_in2), dim=1)
 
-estimate = RNN_Model(state_in)
-print(estimate)
+# estimate = RNN_Model(state_in)
+# print(estimate)
