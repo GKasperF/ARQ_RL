@@ -76,7 +76,7 @@ def Test(env, Q, Nit, batch):
         c_in = torch.zeros((5, batch, 50)).to(device)
         SuccessF = torch.zeros(batch).to(device)
         while 1:
-          Q_values, h_out, c_out = Q(state, h_in, c_in)
+          Q_values, (h_out, c_out) = Q(state, h_in, c_in)
           action_index = torch.argmax(Q_values, dim = 1)
           # take action and get reward, transit to next state
           transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]
