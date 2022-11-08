@@ -101,8 +101,6 @@ def Test(env, Q, Nit, batch):
     average_reward = torch.mean(reward_save[:, 0])
     average_transmissions = torch.mean(reward_save[:, 1])
     average_recovery = torch.mean(reward_save[:, 2]) - env.Tf
-
-    print('Estimated expected reward is {} \n Expected reward is: {}'.format(Q(env.reset()), average_reward))
     
     return(average_reward, average_transmissions, average_recovery)
 
