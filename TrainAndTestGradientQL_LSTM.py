@@ -70,7 +70,6 @@ def Test(env, Q, Nit, batch):
     number_successes = torch.zeros(batch).to(device)
 
     reward_save = torch.empty((0, 4)).to(device)
-    deadline = 50
     for i in range(int(Nit/batch)):
         done = 0
         reward_acc[:] = 0
@@ -96,7 +95,7 @@ def Test(env, Q, Nit, batch):
           state = next_state
           h_in = h_out.detach() 
           c_in = c_out.detach()
-          if torch.any(time_instant > deadline) and torch.any(transmissions == 0):
+          if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
             print('Learned bad policy')
             break
           if done:
