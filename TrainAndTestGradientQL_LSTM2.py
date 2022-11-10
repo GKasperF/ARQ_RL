@@ -31,6 +31,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     if os.path.isfile('Data/'+model_file):
       with open('Data/'+model_file, 'rb') as f:
         Q = pickle.load(f)
+        Q = Q.to(device)
     else:
       t0 = time.time()
       Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
@@ -38,7 +39,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
       with open('Data/'+model_file, 'wb') as f:
         pickle.dump(Q, f)
       print('Training takes {} seconds'.format(t1 - t0))
-      
+
     t0 = time.time()
     result = Test(TransEnv, Q, Nit, batch)
     t1 = time.time()
