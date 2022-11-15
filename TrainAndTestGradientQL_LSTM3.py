@@ -20,6 +20,13 @@ else:
   for i in range(num_cores):
     q.append('cpu')
 
+test_file = 'Data/AgentCNN_LSTM_RLresultsTestBatch_Iid.pickle'
+if os.path.isfile(test_file):
+  with open(test_file, 'rb') as f:
+    results_dict = pickle.load(f)
+else:
+  results_dict = {}
+
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel).to(device)
@@ -40,14 +47,18 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
         pickle.dump(Q, f)  
       print('Training takes {} seconds'.format(t1 - t0))
 
-    t0 = time.time()
-    result = Test(TransEnv, Q, Nit, batch)
-    t1 = time.time()
-    print('Testing takes {} seconds'.format(t1 - t0))
+    if model_file not in results_dict:
+      print('Start testing for alpha {}'.format(alpha_reward))
+      t0 = time.time()
+      result = Test(TransEnv, Q, Nit, batch)
+      t1 = time.time()
+      print('Testing for alpha {} takes {} seconds'.format(alpha_reward, t1 - t0))
+      results_dict[model_file] = result
+
     q.append(device)
 
-    with open('Data/AgentCNN_LSTM_RLresultsTestBatch_Iid.pickle', 'ab') as f:
-      pickle.dump(result, f)
+    with open(test_file, 'wb') as f:
+      pickle.dump(results_dict, f)
 
     return(result)
 
@@ -129,5 +140,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNN_LSTM_RLresultsTestBatch_Iid.pickle', 'wb') as f:
+with open('Data/AgentCNN_LSTM_RL_All_resultsTestBatch_Iid.pickle', 'wb') as f:
     pickle.dump(store_results, f)

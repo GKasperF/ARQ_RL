@@ -8,4 +8,4 @@
 
 module load anaconda3/2021.05
 source activate pytorch_env
-python3 ./TrainAndTestGradientQL_LSTM.py
+python3 ./TrainAndTestGradientQL_LSTM.py > ./TrainAndTestGradientQL_LSTM.txt
