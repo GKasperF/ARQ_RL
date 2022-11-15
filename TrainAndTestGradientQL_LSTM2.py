@@ -30,7 +30,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     model_file = 'ModelCNN_LSTM_Batch_SimpleGE'+string_alpha+'.pickle'
     if os.path.isfile('Data/'+model_file):
       with open('Data/'+model_file, 'rb') as f:
-        Q = pickle.load(f)
+        Q = pickle.load(f).to(device)
     else:
       t0 = time.time()
       Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
