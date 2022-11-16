@@ -10,7 +10,7 @@ import torch
 import sys
 import os
 
-deadline = 30
+deadline = float(30)
 
 q = []
 if torch.cuda.is_available():
