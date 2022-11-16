@@ -102,6 +102,7 @@ def Test(env, Q, Nit, batch):
         while 1:
           Q_values, (h_out, c_out) = Q(state, h_in, c_in)
           action_index_temp = torch.argmax(Q_values, dim = 1)
+          breakpoint()
 
           #Force transmissions if past deadline:
           action_index = torch.where(transmissions > deadline, torch_ones, action_index_temp)
