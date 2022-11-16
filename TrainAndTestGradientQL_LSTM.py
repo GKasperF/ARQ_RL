@@ -58,6 +58,8 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
       t1 = time.time()
       print('Testing for alpha {} takes {} seconds'.format(alpha_reward, t1 - t0))
       results_dict[model_file] = result
+    else:
+      result = results_dict[model_file]
 
 
     q.append(device)
