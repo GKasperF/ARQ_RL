@@ -10,6 +10,7 @@ import torch
 import sys
 import os
 
+deadline = 30
 
 q = []
 if torch.cuda.is_available():
@@ -83,6 +84,8 @@ def Test(env, Q, Nit, batch):
     time_instant = torch.zeros(batch).to(device)
     number_successes = torch.zeros(batch).to(device)
 
+    torch_ones = torch.ones(batch).to(device)
+
     reward_save = torch.empty((0, 4)).to(device)
     for i in range(int(Nit/batch)):
         done = 0
@@ -96,7 +99,11 @@ def Test(env, Q, Nit, batch):
         SuccessF = torch.zeros(batch).to(device)
         while 1:
           Q_values, (h_out, c_out) = Q(state, h_in, c_in)
-          action_index = torch.argmax(Q_values, dim = 1)
+          action_index_temp = torch.argmax(Q_values, dim = 1)
+
+          #Force transmissions if past deadline:
+          action_index = torch.where(transmissions > deadline, torch_ones, action_index_temp)
+
           # take action and get reward, transit to next state
           transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]
 
@@ -109,9 +116,9 @@ def Test(env, Q, Nit, batch):
           state = next_state
           h_in = h_out.detach() 
           c_in = c_out.detach()
-          if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
-            print('Learned bad policy')
-            break
+          # if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
+          #   print('Learned bad policy')
+          #   break
           if done:
             break
         
