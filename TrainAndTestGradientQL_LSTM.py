@@ -104,14 +104,8 @@ def Test(env, Q, Nit, batch):
           action_index_temp = torch.argmax(Q_values, dim = 1)
 
           #Force transmissions if past deadline:
-          try:
-            action_index = torch.where(transmissions > deadline, torch_ones, action_index_temp)
-          except RuntimeError as e:
-            print(torch_ones.shape)
-            print(action_index_temp.shape)
-            print(action_index_temp.dtype)
-            print(torch_ones.dtype)
-            raise RuntimeError(e)
+      
+          action_index = torch.where(transmissions > deadline, torch_ones, action_index_temp)
 
           # take action and get reward, transit to next state
           transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]

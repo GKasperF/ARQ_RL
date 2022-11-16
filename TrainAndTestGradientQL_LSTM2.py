@@ -82,7 +82,7 @@ def Test(env, Q, Nit, batch):
     time_instant = torch.zeros(batch).to(device)
     number_successes = torch.zeros(batch).to(device)
 
-    torch_ones = torch.ones(batch).to(device)
+    torch_ones = torch.ones(batch).to(device).type(torch.int64)
 
     reward_save = torch.empty((0, 4)).to(device)
     for i in range(int(Nit/batch)):
