@@ -7,6 +7,14 @@ import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
 import torch
+import os
+
+test_file = 'Data/AgentCNNRLresults_GE_Isolated_Example_RNN_Dict.pickle'
+if os.path.isfile(test_file):
+  with open(test_file, 'rb') as f:
+    results_dict = pickle.load(f)
+else:
+  results_dict = {}
 
 class ChannelModel(torch.nn.Module):
   def __init__(self, hidden_size, num_layers, output_size):
@@ -49,19 +57,31 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     TransEnv = Envs.EnvFeedbackRNN_GE(Tf, alpha_reward, beta_reward, Channel_Local, RNN_Model_Local, batch)
     TransEnv = TransEnv.to(device)
     model_file = 'ModelCNN_GE_Isolated_Example_RNN'+string_alpha+'.pickle'
-    t0 = time.time()
-    Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
-    t1 = time.time()
+    if os.path.isfile('Data/'+model_file):
+      with open('Data/'+ model_file, 'rb') as f:
+        Q = pickle.load(f)
+    else:
+      t0 = time.time()
+      Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
+      t1 = time.time()
+      print('Training takes {} seconds'.format(t1 - t0))
     
     with open('Data/'+model_file, 'wb') as f:
-      pickle.dump(Q, f)    
+      pickle.dump(Q, f)
 
-    print('Training takes {} seconds'.format(t1 - t0))
-    t0 = time.time()
-    result = Test(TransEnv, Q, Nit, batch)
-    t1 = time.time()
-    print('Testing takes {} seconds'.format(t1 - t0))
+    if model_file in results_dict:
+      result = results_dict[model_file]
+    else:
+      t0 = time.time()
+      result = Test(TransEnv, Q, Nit, batch)
+      t1 = time.time()
+      print('Testing takes {} seconds'.format(t1 - t0))
+      results_dict[model_file] = result
+
     q.append(device)
+
+    with open(test_file, 'wb') as f:
+      pickle.dump(results_dict, f)
 
     with open('Data/AgentCNNRLresults_GE_Isolated_Example_RNN2.pickle', 'ab') as f:
       pickle.dump(result, f)
