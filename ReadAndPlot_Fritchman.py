@@ -27,6 +27,15 @@ with open('Data/AgentCNN_LSTM_RLresultsTestBatch_Fritchman.pickle', 'rb') as f:
 average_transmissions_DRQN = [result_dict_DRQN[model][1] for model in result_dict_DRQN]
 average_recovery_DRQN = [result_dict_DRQN[model][2] for model in result_dict_DRQN]
 
+with open('Data/AgentRLresults_QTable_Fritchman_Example.pickle', 'rb') as f:
+    store_results_Qtable = pickle.load(f)
+
+average_transmissions_table = [store_results_Qtable[t][1] for t in range(len(store_results_Qtable))]
+average_recovery_table = [store_results_Qtable[t][2] for t in range(len(store_results_Qtable))]
+
+average_recovery_table = [x for _, x in sorted(zip(average_transmissions_table, average_recovery_table))]
+average_transmissions_table.sort()
+
 # test = zip(average_transmissions2, average_recovery2)
 # test = list(test)
 # test = lower_convex_hull(test)
@@ -83,8 +92,8 @@ average_transmissions_lb = [convex_hull_results[t][0] for t in range(len(convex_
 average_recovery_lb = [convex_hull_results[t][1] for t in range(len(convex_hull_results))]
 
 import matplotlib.pyplot as plt
-plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions_DRQN, average_recovery_DRQN, 'xb', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
-plt.legend(('Proposed Scheme', 'DRQN', 'Multi-burst Transmission', 'Lower Bound'))
+plt.plot(average_transmissions, average_recovery, 'xk', average_transmissions_DRQN, average_recovery_DRQN, 'xb', average_transmissions_table, average_recovery_table, 'xg', average_transmissions_heur, average_recovery_heur, '-sg', average_transmissions_lb, average_recovery_lb, '-or')
+plt.legend(('Proposed Scheme', 'DRQN', 'Q-Learning with Table', 'Multi-burst Transmission', 'Lower Bound'))
 plt.xlabel('Average Number of Transmissions')
 plt.ylabel('Average Recovery Time')
 plt.grid()

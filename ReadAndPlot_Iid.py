@@ -34,7 +34,7 @@ with open('Data/AgentRLresults_QTable_Iid_Example.pickle', 'rb') as f:
     store_results_Qtable = pickle.load(f)
 
 average_transmissions_table = [store_results_Qtable[t][1] for t in range(len(store_results_Qtable))]
-average_recovery_table = [store_results_Qtable[t][1] for t in range(len(store_results_Qtable))]
+average_recovery_table = [store_results_Qtable[t][2] for t in range(len(store_results_Qtable))]
 
 average_recovery_table = [x for _, x in sorted(zip(average_transmissions_table, average_recovery_table))]
 average_transmissions_table.sort()
