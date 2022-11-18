@@ -92,8 +92,8 @@ def Test(env, Q, Nit, batch):
         time_instant[:] = 1
         number_successes[:] = 0
         state = env.reset()
-        h_in = torch.zeros((5, batch, 50)).to(device)
-        c_in = torch.zeros((5, batch, 50)).to(device)
+        h_in = torch.zeros((5, batch, Q.hidden_size_LSTM)).to(device)
+        c_in = torch.zeros((5, batch, Q.hidden_size_LSTM)).to(device)
         SuccessF = torch.zeros(batch).to(device)
         while 1:
           Q_values, (h_out, c_out) = Q(state, h_in, c_in)
