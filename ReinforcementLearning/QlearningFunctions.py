@@ -74,7 +74,7 @@ class QApproxFunction_LSTM(torch.nn.Module):
     self.state_dim = state_dim
     self.action_dim = action_dim
     self.hidden_layer = hidden_layer
-    self.hidden_size_LSTM = 50
+    self.hidden_size_LSTM = action_dim
 
     
     
@@ -86,7 +86,7 @@ class QApproxFunction_LSTM(torch.nn.Module):
 
     self.Layer6 = torch.nn.Conv1d(hidden_layer, 1, 1)
 
-    self.FinalLayer = torch.nn.LSTM(state_dim, hidden_size = self.hidden_size_LSTM, num_layers = 5, proj_size = self.action_dim, batch_first = True)
+    self.FinalLayer = torch.nn.LSTM(state_dim, hidden_size = self.hidden_size_LSTM, num_layers = 5, batch_first = True)
 
   def forward(self, x, h, c):
     L1 = self.Layer1(x)
@@ -365,7 +365,7 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
     count0 = 0
     rewards_acc = torch.zeros((env.batch, 1)).to(device)
 
-    h_in = torch.zeros((5, env.batch, Qfunction.action_dim)).to(device)
+    h_in = torch.zeros((5, env.batch, Qfunction.hidden_size_LSTM)).to(device)
     c_in = torch.zeros((5, env.batch, Qfunction.hidden_size_LSTM)).to(device)
     # For every episode
     while num_finished_episodes < num_episodes:
