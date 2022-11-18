@@ -76,23 +76,20 @@ class QApproxFunction_LSTM(torch.nn.Module):
     self.hidden_layer = hidden_layer
     self.hidden_size_LSTM = 50
 
-    self.Layer0 = torch.nn.LSTM(state_dim, hidden_size = self.hidden_size_LSTM, num_layers = 5, batch_first = True)
     
-    self.Layer1 = torch.nn.Linear(self.hidden_size_LSTM, 1000*state_dim)
+    
+    self.Layer1 = torch.nn.Linear(self.state_dim, 1000*state_dim)
     self.Layer2 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
     self.Layer3 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
     self.Layer4 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
     self.Layer5 = torch.nn.Conv1d(hidden_layer, hidden_layer, 3, padding = 1)
 
     self.Layer6 = torch.nn.Conv1d(hidden_layer, 1, 1)
-    
-    self.FinalLayer = torch.nn.Linear(state_dim, action_dim)
+
+    self.FinalLayer = torch.nn.LSTM(state_dim, hidden_size = self.hidden_size_LSTM, num_layers = 5, proj_size = self.action_dim, batch_first = True)
 
   def forward(self, x, h, c):
-    x = x.reshape(-1, 1, self.state_dim)
-    L0, (h_out, c_out) = self.Layer0(x, (h, c))
-    L0 = L0.view(-1, self.hidden_size_LSTM)
-    L1 = self.Layer1(L0)
+    L1 = self.Layer1(x)
     L1_reshaped = L1.view(-1, self.hidden_layer, self.state_dim)
     ReLU1 = F.relu(L1_reshaped)
     L2 = self.Layer2(ReLU1)
@@ -106,9 +103,29 @@ class QApproxFunction_LSTM(torch.nn.Module):
     L6 = self.Layer6(ReLU5)
 
     
-    output = self.FinalLayer(L6.view(-1, self.state_dim))
+    output, (h_out, c_out) = self.FinalLayer(L6.view(-1, self.state_dim), (h, c))
     
     return (output, (h_out, c_out))
+    # x = x.reshape(-1, 1, self.state_dim)
+    # L0, (h_out, c_out) = self.Layer0(x, (h, c))
+    # L0 = L0.view(-1, self.hidden_size_LSTM)
+    # L1 = self.Layer1(L0)
+    # L1_reshaped = L1.view(-1, self.hidden_layer, self.state_dim)
+    # ReLU1 = F.relu(L1_reshaped)
+    # L2 = self.Layer2(ReLU1)
+    # ReLU2 = F.relu(L2)
+    # L3 = self.Layer3(ReLU2)
+    # ReLU3 = F.relu(L3)
+    # L4 = self.Layer4(ReLU3)
+    # ReLU4 = F.relu(L4)
+    # L5 = self.Layer5(ReLU4)
+    # ReLU5 = F.relu(L5)
+    # L6 = self.Layer6(ReLU5)
+
+    
+    # output = self.FinalLayer(L6.view(-1, self.state_dim))
+    
+    # return (output, (h_out, c_out))
 
 def GradientQLearning(env, num_episodes, Qfunction , discount_factor = 1.0,
                             epsilon = 0.1, UpdateEpisodes = 10, UpdateTargetEpisodes = 100, lr = 0.001):
@@ -348,8 +365,8 @@ def GradientQLearningLSTM(env, num_episodes, Qfunction , discount_factor = 1.0,
     count0 = 0
     rewards_acc = torch.zeros((env.batch, 1)).to(device)
 
-    h_in = torch.zeros((5, env.batch, 50)).to(device)
-    c_in = torch.zeros((5, env.batch, 50)).to(device)
+    h_in = torch.zeros((5, env.batch, Qfunction.action_dim)).to(device)
+    c_in = torch.zeros((5, env.batch, Qfunction.hidden_size_LSTM)).to(device)
     # For every episode
     while num_finished_episodes < num_episodes:
         # get probabilities of all actions from current state

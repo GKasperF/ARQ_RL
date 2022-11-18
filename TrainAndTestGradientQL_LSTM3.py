@@ -21,7 +21,7 @@ else:
   for i in range(num_cores):
     q.append('cpu')
 
-test_file = 'Data/AgentCNN_LSTM_RLresultsTestBatch_Iid.pickle'
+test_file = 'Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_Iid.pickle'
 if os.path.isfile(test_file):
   with open(test_file, 'rb') as f:
     results_dict = pickle.load(f)
@@ -35,7 +35,7 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     alpha_reward = alpha_reward.to(device)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
     TransEnv = TransEnv.to(device)
-    model_file = 'ModelCNN_LSTM_Batch_Iid'+string_alpha+'.pickle'
+    model_file = 'ModelCNN_LSTM_DRQN_Batch_Iid'+string_alpha+'.pickle'
     if os.path.isfile('Data/'+model_file):
       with open('Data/'+model_file, 'rb') as f:
         Q = pickle.load(f)
@@ -149,5 +149,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNN_LSTM_RL_All_resultsTestBatch_Iid.pickle', 'wb') as f:
+with open('Data/AgentCNN_LSTM_DRQN_RL_All_resultsTestBatch_Iid.pickle', 'wb') as f:
     pickle.dump(store_results, f)
