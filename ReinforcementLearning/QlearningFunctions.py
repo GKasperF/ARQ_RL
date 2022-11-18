@@ -103,7 +103,7 @@ class QApproxFunction_LSTM(torch.nn.Module):
     L6 = self.Layer6(ReLU5)
 
     
-    output, (h_out, c_out) = self.FinalLayer(L6.view(-1, self.state_dim), (h, c))
+    output, (h_out, c_out) = self.FinalLayer(L6.view(-1, self.state_dim), h, c)
     
     return (output, (h_out, c_out))
     # x = x.reshape(-1, 1, self.state_dim)
