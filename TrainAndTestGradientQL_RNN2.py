@@ -7,6 +7,14 @@ import pickle
 import ReinforcementLearning.QlearningFunctions as QL
 import Envs.PytorchEnvironments as Envs
 import torch
+import os
+
+test_file = 'Data/AgentCNNRLresults_SimpleGE_Example_RNN_Dict.pickle'
+if os.path.isfile(test_file):
+  with open(test_file, 'rb') as f:
+    results_dict = pickle.load(f)
+else:
+  results_dict = {}
 
 class ChannelModel(torch.nn.Module):
   def __init__(self, hidden_size, num_layers, output_size):
@@ -49,19 +57,31 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     TransEnv = Envs.EnvFeedbackRNN_GE(Tf, alpha_reward, beta_reward, Channel_Local, RNN_Model_Local, batch)
     TransEnv = TransEnv.to(device)
     model_file = 'ModelCNN_SimpleGE_Example_RNN'+string_alpha+'.pickle'
-    t0 = time.time()
-    Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
-    t1 = time.time()
+    if os.path.isfile('Data/'+model_file):
+      with open('Data/'+ model_file, 'rb') as f:
+        Q = pickle.load(f).to(device)
+    else:
+      t0 = time.time()
+      Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
+      t1 = time.time()
+      print('Training takes {} seconds'.format(t1 - t0))
     
     with open('Data/'+model_file, 'wb') as f:
-      pickle.dump(Q, f)    
+      pickle.dump(Q, f)
 
-    print('Training takes {} seconds'.format(t1 - t0))
-    t0 = time.time()
-    result = Test(TransEnv, Q, Nit, batch)
-    t1 = time.time()
-    print('Testing takes {} seconds'.format(t1 - t0))
+    if model_file in results_dict:
+      result = results_dict[model_file]
+    else:
+      t0 = time.time()
+      result = Test(TransEnv, Q, Nit, batch)
+      t1 = time.time()
+      print('Testing takes {} seconds'.format(t1 - t0))
+      results_dict[model_file] = result
+
     q.append(device)
+
+    with open(test_file, 'wb') as f:
+      pickle.dump(results_dict, f)
 
     with open('Data/AgentCNNRLresults_SimpleGE_Example_RNN2.pickle', 'ab') as f:
       pickle.dump(result, f)
@@ -123,7 +143,7 @@ def Test(env, Q, Nit, batch):
 
 
 alpha_range = torch.arange(0.1, 5.5, 0.1)
-#alpha_range = torch.arange(3.5, 5.5, 0.1)
+#alpha_range = torch.arange(2.8, 5.5, 0.1)
 #alpha_range = torch.tensor([0.1, 0.5, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0])
 beta_reward = 5
 Tf = 10
@@ -131,7 +151,7 @@ Nit = 100000
 epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 discount_factor = 0.95
 
-batches = 50
+batches = 100
 
 Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1, batches)
 #Channel = Envs.GilbertElliott(0.1, 0.25, 0.05, 1, batches)

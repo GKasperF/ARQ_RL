@@ -10,6 +10,7 @@ import torch
 import sys
 import os
 
+deadline = float(30)
 q = []
 if torch.cuda.is_available():
   num_cores = torch.cuda.device_count()
@@ -20,6 +21,13 @@ else:
   for i in range(num_cores):
     q.append('cpu')
 
+test_file = 'Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_SimpleGE.pickle'
+if os.path.isfile(test_file):
+  with open(test_file, 'rb') as f:
+    results_dict = pickle.load(f)
+else:
+  results_dict = {}
+
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batch, Channel):
     device = q.pop()
     Channel_Local = copy.deepcopy(Channel).to(device)
@@ -27,26 +35,33 @@ def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episod
     alpha_reward = alpha_reward.to(device)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, batch, M=5)
     TransEnv = TransEnv.to(device)
-    model_file = 'ModelCNN_LSTM_Batch_SimpleGE'+string_alpha+'.pickle'
+    model_file = 'ModelCNN_LSTM_DRQN_Batch_SimpleGE'+string_alpha+'.pickle'
     if os.path.isfile('Data/'+model_file):
       with open('Data/'+model_file, 'rb') as f:
-        Q = pickle.load(f).to(device)
+        Q = pickle.load(f)
+        Q = Q.to(device)
     else:
       t0 = time.time()
       Q, policy = Train(TransEnv, discount_factor, num_episodes, epsilon)
       t1 = time.time()
       with open('Data/'+model_file, 'wb') as f:
         pickle.dump(Q, f)
-
       print('Training takes {} seconds'.format(t1 - t0))
-    t0 = time.time()
-    result = Test(TransEnv, Q, Nit, batch)
-    t1 = time.time()
-    print('Testing takes {} seconds'.format(t1 - t0))
+
+    if model_file not in results_dict:
+      print('Start testing for alpha {}'.format(alpha_reward))
+      t0 = time.time()
+      result = Test(TransEnv, Q, Nit, batch)
+      t1 = time.time()
+      print('Testing for alpha {} takes {} seconds'.format(alpha_reward, t1 - t0))
+      results_dict[model_file] = result
+    else:
+      result = results_dict[model_file]
+
     q.append(device)
 
-    with open('Data/AgentCNN_LSTM_RLresultsTestBatch_SimpleGE.pickle', 'ab') as f:
-      pickle.dump(result, f)
+    with open(test_file, 'wb') as f:
+      pickle.dump(results_dict, f)
 
     return(result)
 
@@ -67,6 +82,8 @@ def Test(env, Q, Nit, batch):
     time_instant = torch.zeros(batch).to(device)
     number_successes = torch.zeros(batch).to(device)
 
+    torch_ones = torch.ones(batch).to(device).type(torch.int64)
+
     reward_save = torch.empty((0, 4)).to(device)
     for i in range(int(Nit/batch)):
         done = 0
@@ -75,12 +92,16 @@ def Test(env, Q, Nit, batch):
         time_instant[:] = 1
         number_successes[:] = 0
         state = env.reset()
-        h_in = torch.zeros((5, batch, 50)).to(device)
-        c_in = torch.zeros((5, batch, 50)).to(device)
+        h_in = torch.zeros((5, batch, Q.hidden_size_LSTM)).to(device)
+        c_in = torch.zeros((5, batch, Q.hidden_size_LSTM)).to(device)
         SuccessF = torch.zeros(batch).to(device)
         while 1:
           Q_values, (h_out, c_out) = Q(state, h_in, c_in)
-          action_index = torch.argmax(Q_values, dim = 1)
+          action_index_temp = torch.argmax(Q_values, dim = 1)
+
+          #Force transmissions if past deadline:
+          action_index = torch.where(time_instant > deadline, torch_ones, action_index_temp)
+
           # take action and get reward, transit to next state
           transmissions[torch.logical_not(SuccessF)] = transmissions[torch.logical_not(SuccessF)] + action_index.reshape(len(action_index))[torch.logical_not(SuccessF)]
 
@@ -93,9 +114,9 @@ def Test(env, Q, Nit, batch):
           state = next_state
           h_in = h_out.detach() 
           c_in = c_out.detach()
-          if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
-            print('Learned bad policy')
-            break
+          # if torch.any(time_instant > env.Tf) and torch.any(transmissions == 0):
+          #   print('Learned bad policy')
+          #   break
           if done:
             break
         
@@ -128,5 +149,5 @@ num_episodes = [int(2000), int(2000), int(10000), int(20000), int(50000)]
 
 store_results = Parallel(n_jobs = num_cores, require='sharedmem')(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel) for alpha_reward in alpha_range)
 #store_results = TrainAndTest(alpha_range[0], beta_reward, Tf, Nit, discount_factor, num_episodes, epsilon, batches, Channel)
-with open('Data/AgentCNN_LSTM_RLresultsTestBatch_SimpleGE.pickle', 'wb') as f:
+with open('Data/AgentCNN_LSTM_DRQN_RL_All_resultsTestBatch_SimpleGE.pickle', 'wb') as f:
     pickle.dump(store_results, f)
