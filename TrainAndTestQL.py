@@ -7,12 +7,34 @@ import pickle
 import ReinforcementLearning.QlearningTable as QL
 import Envs.Environments as Envs
 from collections import defaultdict
+import os
+import dill
+
+test_file = 'Data/Agent_QTable_results_Iid_Example_Dict.pickle'
+if os.path.isfile(test_file):
+  with open(test_file, 'rb') as f:
+    results_dict = pickle.load(f)
+else:
+  results_dict = {}
 
 def TrainAndTest(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel, M):
     Channel_Local = copy.deepcopy(Channel)
     TransEnv = Envs.EnvFeedbackGeneral(Tf, alpha_reward, beta_reward, Channel_Local, M)
+    string_alpha = str(alpha_reward)
+    model_file = 'Model_Iid_Example_QTable'+string_alpha+'.pickle'
+    if os.path.isfile('Data/'+model_file):
+      with open('Data/'+ model_file, 'rb') as f:
+        Q = dill.load(f)
+        policy = QL.createEpsilonGreedyPolicy(Q, 0, TransEnv.action_space.n)
+    else:
+      t0 = time.time()
+      Q, policy = Train(TransEnv, discount_factor, num_episodes, alpha, epsilon)
+      t1 = time.time()
+      print('Training takes {} seconds'.format(t1 - t0))
+      with open('Data/'+model_file, 'wb') as f:
+        dill.dump(Q, f)
+
     
-    Q, policy = Train(TransEnv, discount_factor, num_episodes, alpha, epsilon)
     
     average_reward, average_transmissions, average_recovery = Test(TransEnv, policy, Nit)
     
@@ -69,7 +91,8 @@ def Test(env, policy, Nit):
     return(average_reward, average_transmissions, average_recovery)
 
 
-Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
+#Channel = Envs.GilbertElliott(0.25, 0.25, 0, 1)
+Channel = Envs.iidchannel(0.1)
 num_cores = multiprocessing.cpu_count()
 alpha_range = np.arange(0.1, 5.5, 0.1)
 beta_reward = 5
@@ -83,6 +106,6 @@ epsilon = [0.8, 0.6, 0.3, 0.2, 0.1]
 alpha = [0.5, 0.2, 0.01, 0.001, 0.0001]
 store_results = Parallel(n_jobs = num_cores)(delayed(TrainAndTest)(alpha_reward, beta_reward, Tf, Nit, discount_factor, num_episodes, alpha, epsilon, Channel, M) for alpha_reward in alpha_range)
 
-with open('Data/AgentRLresults_Memory_FewEpisodes2.pickle', 'wb') as f:
+with open('Data/AgentRLresults_QTable_Iid_Example.pickle', 'wb') as f:
     pickle.dump(store_results, f)
 
