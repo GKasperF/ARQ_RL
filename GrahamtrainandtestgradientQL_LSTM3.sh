@@ -11,4 +11,4 @@
 
 module load python/3.8.10
 source RLVirtualEnv/bin/activate
-python3 ./TrainAndTestGradientQL_LSTM3.py 0.1 2.5
+python3 ./TrainAndTestGradientQL_LSTM3.py 0.1 5.5
