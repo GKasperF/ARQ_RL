@@ -10,7 +10,7 @@ import torch
 import sys
 import os
 
-deadline = float(30)
+deadline = float(90)
 q = []
 if torch.cuda.is_available():
   num_cores = torch.cuda.device_count()
@@ -21,7 +21,7 @@ else:
   for i in range(num_cores):
     q.append('cpu')
 
-test_file = 'Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_SimpleGE.pickle'
+test_file = 'Data/AgentCNN_LSTM_DRQN_LongerDeadline_RLresultsTestBatch_SimpleGE.pickle'
 if os.path.isfile(test_file):
   with open(test_file, 'rb') as f:
     results_dict = pickle.load(f)
