@@ -10,7 +10,7 @@ class CPU_Unpickler(pickle.Unpickler):
           return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
       else: return super().find_class(module, name)
 
-with open('Data/AgentCNNRLresults_Fritchman_Example_RNN_Dict.pickle', 'rb') as f:
+with open('Data/AgentCNNRLresults_SimpleGE_Example_RNN_Dict.pickle', 'rb') as f:
     result_dict = CPU_Unpickler(f).load()
 
 #return(average_reward, average_transmissions, average_recovery)
@@ -21,13 +21,16 @@ average_recovery = [result_dict[model][2] for model in result_dict]
 average_recovery = [x for _, x in sorted(zip(average_transmissions, average_recovery))]
 average_transmissions.sort()
 
-with open('Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_Fritchman.pickle', 'rb') as f:
+with open('Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_SimpleGE.pickle', 'rb') as f:
     result_dict_DRQN = CPU_Unpickler(f).load()
 
 average_transmissions_DRQN = [result_dict_DRQN[model][1] for model in result_dict_DRQN]
 average_recovery_DRQN = [result_dict_DRQN[model][2] for model in result_dict_DRQN]
 
-with open('Data/AgentRLresults_QTable_Fritchman_Example.pickle', 'rb') as f:
+average_recovery_DRQN = [x for _, x in sorted(zip(average_transmissions_DRQN, average_recovery_DRQN))]
+average_transmissions_DRQN.sort()
+
+with open('Data/AgentRLresults_QTable_SimpleGE_Example.pickle', 'rb') as f:
     store_results_Qtable = pickle.load(f)
 
 average_transmissions_table = [store_results_Qtable[t][1] for t in range(len(store_results_Qtable))]
@@ -36,27 +39,7 @@ average_recovery_table = [store_results_Qtable[t][2] for t in range(len(store_re
 average_recovery_table = [x for _, x in sorted(zip(average_transmissions_table, average_recovery_table))]
 average_transmissions_table.sort()
 
-# test = zip(average_transmissions2, average_recovery2)
-# test = list(test)
-# test = lower_convex_hull(test)
-# i = 1
-# while 1:
-# 	if i == len(test):
-# 		break
-# 	point = test[i]
-# 	previous_point = test[i-1]
-# 	if point[0] > previous_point[0] and point[1] > previous_point[1]:
-# 		test.pop(i)
-# 	else:
-# 		i+=1
-
-# average_transmissions2 = [test[t][0] for t in range(len(test))]
-# average_recovery2 = [test[t][1] for t in range(len(test))]
-
-average_recovery_DRQN = [x for _, x in sorted(zip(average_transmissions_DRQN, average_recovery_DRQN))]
-average_transmissions_DRQN.sort()
-
-with open('Data/HeuristicsResults_Fritchman_Example.pickle', 'rb') as f:
+with open('Data/HeuristicsResults_SimpleGE_Example.pickle', 'rb') as f:
     store_results_heur = pickle.load(f)
 
 average_transmissions_heur = [store_results_heur[t][1] for t in range(len(store_results_heur))]
@@ -72,7 +55,7 @@ average_recovery_heur = [test[t][1] for t in range(len(test))]
 average_recovery_heur = [x for _, x in sorted(zip(average_transmissions_heur, average_recovery_heur))]
 average_transmissions_heur.sort()
 
-with open('Data/BruteForce_Fritchman_Example.pickle', 'rb') as f:
+with open('Data/BruteForceGESimple.pickle', 'rb') as f:
     store_results_brute_force = pickle.load(f)
 
 convex_hull_results = lower_convex_hull(store_results_brute_force)
