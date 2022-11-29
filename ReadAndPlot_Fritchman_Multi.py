@@ -69,9 +69,9 @@ average_recovery_heur = [x for _, x in sorted(zip(average_transmissions_heur, av
 average_transmissions_heur.sort()
 
 import matplotlib.pyplot as plt
-plt.plot(Transmissions, Delay, 'xk', Transmissions, InOrderDelay, '+k', average_transmissions_heur, average_recovery_heur, '-g', average_transmissions_heur_inorder, average_recovery_heur_inorder, '--g')
-plt.legend(('Delay', 'In-Order Delay', 'Heuristic Recovery Delay', 'Heuristic In-Order Delay'))
+plt.plot(Transmissions, InOrderDelay, '+k', average_transmissions_heur_inorder, average_recovery_heur_inorder, '--g')
+plt.legend(('Proposed Scheme', 'Multi-Burst Transmission'))
 plt.xlabel('Average Number of Transmissions')
-plt.ylabel('Average Delay')
+plt.ylabel('Average In-Order Delay')
 plt.grid()
 plt.show()

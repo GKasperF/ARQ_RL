@@ -76,14 +76,11 @@ average_recovery_rateless = [store_results_rateless[t][1] for t in range(len(sto
 
 
 import matplotlib.pyplot as plt
-plt.plot(Transmissions, InOrderDelay, '+k',  average_transmissions_heur_inorder, average_recovery_heur_inorder, average_transmissions_rateless, average_recovery_rateless, '-b')
-plt.legend(('Proposed', 'Multi-Burst Transmission', 'Rateless Code'))
+plt.plot(Transmissions, InOrderDelay, '+k', average_transmissions_heur_inorder, average_recovery_heur_inorder, '--g')
+plt.legend(('Proposed Scheme', 'Multi-Burst Transmission'))
 plt.xlabel('Average Number of Transmissions')
 plt.ylabel('Average In-Order Delay')
-plt.ylim((0, 25))
-plt.xlim(right=6)
 plt.grid()
-plt.savefig('InOrderDelay_GE_Isolated_Example.pdf')
 plt.show()
 
 # plt.plot(Transmissions, Delay, 'xk', Transmissions, InOrderDelay, '+k', average_transmissions_heur, average_recovery_heur, '-g', average_transmissions_heur_inorder, average_recovery_heur_inorder, average_transmissions_rateless, average_recovery_rateless, '-b')
