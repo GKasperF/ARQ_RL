@@ -21,7 +21,7 @@ average_recovery = [result_dict[model][2] for model in result_dict]
 average_recovery = [x for _, x in sorted(zip(average_transmissions, average_recovery))]
 average_transmissions.sort()
 
-with open('Data/AgentCNN_LSTM_DRQN_RLresultsTestBatch_Iid.pickle', 'rb') as f:
+with open('Data/AgentCNN_LSTM_DRQN_LongerDeadline_RLresultsTestBatch_Iid.pickle', 'rb') as f:
     result_dict_DRQN = CPU_Unpickler(f).load()
 
 average_transmissions_DRQN = [result_dict_DRQN[model][1] for model in result_dict_DRQN]
